@@ -18,11 +18,12 @@ const ProjectRoutes = () => {
   return (
     <div className="flex">
     <Sidebar1 />
+    <div style={{ flex: 1 }}>
       <Routes>
         <Route path="dhiwise-dashboard" element={<Home />} />
         <Route path="/" element={<Dashboard />} />
         <Route path="orderlist" element={<OrderList />} />
-        <Route path="addoder" element={<Addoder />} />
+        <Route path="order" element={<Addoder />} />
         <Route path="addtable" element={<AddTable />} />
         <Route path="tablelist" element={<TableList />} />
         <Route path="tableid" element={<TableId />} />
@@ -33,7 +34,7 @@ const ProjectRoutes = () => {
         <Route path="categories" element={<Categories />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      
+      </div>
     </div>
   );
 };
