@@ -103,11 +103,58 @@ const getCategory = asyncHandler(async (req, res) => {
     }
 })
 
+const editCategory = asyncHandler(async(req,res) => {
+        try {       
+            
+            const { name, id, page, limit } = req.body;
+            console.log(name,id,page,limit)
+            //edit category in database
+            const editCategoryQuery = await pool.query('UPDATE category SET name = $1 WHERE id = $2', [name,id]);
+            const offset = (page - 1) * limit
+            const allCategory = await pool.query('SELECT * FROM category limit $1 offset $2',[limit, offset])
+            // Get the total count of categories after deletion
+            const totalCountQuery = await pool.query('SELECT COUNT(*) FROM category');
+            const totalCount = parseInt(totalCountQuery.rows[0].count);
+            res.status(201).json({
+                status: 201,
+                message: "Category updated successfully",
+                data: allCategory.rows,
+                pagination: {
+                    totalCount,
+                    totalPages: Math.ceil(totalCount / limit),
+                    currentPage: page,
+                }
+            });
+
+
+
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+        }
+})
+
+const searchCategory = asyncHandler(async(req,res)=> {
+        try {   
+            const {search} = req.body
+            console.log(search)
+            const searchCategoryQuery = await pool.query('SELECT * FROM category WHERE name ILIKE $1', [`%${search}%`]);
+            res.status(200).json({result : searchCategoryQuery.rows})
+
+
+            
+        } catch (error) {
+            console.error('Error Searching categories:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+})
 
 
 
 module.exports = {
     addCategory,
     deleteCategory,
-    getCategory
+    getCategory,
+    editCategory,
+    searchCategory
 }

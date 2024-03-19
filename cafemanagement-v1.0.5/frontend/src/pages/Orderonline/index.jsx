@@ -6,11 +6,11 @@ export default function OrderonlinePage() {
   return (
     <>
       <Helmet>
-        <title>Dev's Application1</title>
+        <title>Order Page</title>
         <meta name="description" content="Web site created using create-react-app" />
       </Helmet>
       <div className="flex flex-col items-center justify-start w-full pt-[51px] gap-[139px] md:pt-5 bg-gray-50">
-        <div className="flex flex-col items-center justify-start w-full gap-[103px] md:px-5 max-w-[1112px]">
+        <div className="flex flex-col  justify-start w-full gap-[103px] md:px-5 max-w-[1112px]">
           
           <div className="flex flex-col items-center justify-start w-full">
             <div className="flex flex-col items-center justify-start w-full gap-[69px]">
@@ -625,7 +625,7 @@ export default function OrderonlinePage() {
                       <Button
                         size="2xl"
                         shape="round"
-                        className="mb-1 sm:px-5 font-semibold min-w-[283px] !rounded-[15px] sm:min-w-full"
+                        className="mb-1 sm:px-5 font-semibold bg-blue_A200 min-w-[283px] !rounded-[15px] sm:min-w-full"
                       >
                         Checkout
                       </Button>

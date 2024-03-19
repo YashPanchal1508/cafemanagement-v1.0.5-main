@@ -13,7 +13,7 @@ import AddMenu from "./pages/AddMenu/index";
 import MenuList from "./pages/MenuList/index";
 import Categories from "./pages/Categories/index";
 import Sidebar1 from "components/Sidebar1";
-import Addoder from "./pages/Orderonline"
+import AddOrder from "./pages/Orderonline"
 const ProjectRoutes = () => {
   return (
     <div className="flex">
@@ -23,7 +23,7 @@ const ProjectRoutes = () => {
         <Route path="dhiwise-dashboard" element={<Home />} />
         <Route path="/" element={<Dashboard />} />
         <Route path="orderlist" element={<OrderList />} />
-        <Route path="order" element={<Addoder />} />
+        <Route path="order" element={<AddOrder />} />
         <Route path="addtable" element={<AddTable />} />
         <Route path="tablelist" element={<TableList />} />
         <Route path="tableid" element={<TableId />} />

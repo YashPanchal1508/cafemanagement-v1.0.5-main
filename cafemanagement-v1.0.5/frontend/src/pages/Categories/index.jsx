@@ -2,48 +2,71 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from 'react-redux';
 import { useCategoryContext } from "context/category.context";
-import { Button, Img, Input, Text } from "../../components";
+import { Button, Input, Text } from "../../components";
 import Header from "../../components/Header";
 import Popup from "../../components/Popup/index";
 import { Pencil, Trash2 } from 'lucide-react';
-import { deleteCategorySlice,setCurrentPage,setRowsPerPage } from 'redux/categorySlice';
+import { deleteCategorySlice, setCurrentPage, setRowsPerPage } from 'redux/categorySlice';
 import { useDispatch } from 'react-redux';
 import { TablePagination } from '@mui/material';
 import { IconButton } from '@mui/material';
 import { FirstPage, KeyboardArrowLeft, KeyboardArrowRight, LastPage } from '@mui/icons-material';
 
 export default function MenuListPage() {
-  const [showAddCategoryPopup, setShowAddCategoryPopup] = useState(false);
-  const [showDeleteCategoryPopup, setShowDeleteCategoryPopup] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMode, setPopupMode] = useState('add');
   const [categoryToDelete, setCategoryToDelete] = useState();
+  const [showDeleteCategoryPopup, setShowDeleteCategoryPopup] = useState(false);
   const [category, setCategory] = useState('');
+  const [editedCategory, setEditedCategory] = useState('');
+  const [editedCategoryId, setEditedCategoryId] = useState(''); // New state for edited category id
+
   const dispatch = useDispatch();
   const { data: categories, pagination } = useSelector((state) => state.category);
-  const { addCategory, deleteCategory, getCategory } = useCategoryContext();
+  const { addCategory, deleteCategory, getCategory,editCategory,filterData } = useCategoryContext();
 
-  // console.log(typeof categories)
   useEffect(() => {
     getCategory(pagination.currentPage, pagination.rowsPerPage);
   }, []);
 
-  const handleAddCategoryClick = () => {
-    setCategory('');
-    setShowAddCategoryPopup(true);
+  const handlePopupToggle = (mode, category = '', categoryId = '') => {
+    setPopupMode(mode);
+    if (mode === 'edit') {
+      setEditedCategory(category);
+      setEditedCategoryId(categoryId); // Set edited category id
+    } else {
+      setCategory('');
+      setEditedCategory(''); // Reset edited category
+      setEditedCategoryId(''); // Reset edited category id
+    }
+    setShowPopup(true);
   };
+  
 
-  const handlePopupSubmit = async() => {
-    await addCategory(pagination.currentPage, pagination.rowsPerPage, category);
-    setShowAddCategoryPopup(false);
+  const handlePopupSubmit = async () => {
+    if (popupMode === 'edit') {
+      // Handle edit category
+      await editCategory(pagination.currentPage,pagination.rowsPerPage,editedCategory, editedCategoryId)
+    } else {
+      await addCategory(pagination.currentPage, pagination.rowsPerPage, category);
+    }
+    setShowPopup(false);
     setCategory('');
   };
 
   const handleChange = (e) => {
-    setCategory(e.target.value);
+    if (popupMode === 'edit') {
+      setEditedCategory(e.target.value);
+      console.log(editedCategory)
+    } else {
+      setCategory(e.target.value);
+    }
   };
+  
 
   const handleDeleteCategory = (name) => {
     setCategoryToDelete(name);
-    setShowDeleteCategoryPopup(true);
+    setShowDeleteCategoryPopup(true)
   };
 
   const handleDelete = async () => {
@@ -53,39 +76,50 @@ export default function MenuListPage() {
       dispatch(setCurrentPage(newPage))
     }
     setShowDeleteCategoryPopup(false);
+    setShowPopup(false);
   };
 
-  const handleChangePage  = () => {
+  // Pagination event handlers
+  const handleChangePage = () => {
     dispatch(setCurrentPage(newPage + 1));
     getCategory(pagination.currentPage, pagination.rowsPerPage);
   }
   const handleChangeRowsPerPage = (event) => {
-    const newRowsPerPage = parseInt(event.target.value, 10);
+    const newRowsPerPage = event.target.value === '-1' ? parseInt(count) : parseInt(event.target.value, 10);
     dispatch(setRowsPerPage(newRowsPerPage));
-    getCategory(pagination.currentPage, pagination.rowsPerPage);
-  
+    getCategory(1, newRowsPerPage);
+
   };
   const handleFirstPageButtonClick = () => {
     dispatch(setCurrentPage(1));
     getCategory(1, pagination.rowsPerPage);
   };
-  
+
   const handleBackButtonClick = () => {
     const newPage = Math.max(1, pagination.currentPage - 1);
     dispatch(setCurrentPage(newPage));
     getCategory(newPage, pagination.rowsPerPage);
   };
-  
+
   const handleNextButtonClick = () => {
     const newPage = Math.min(pagination.totalPages, pagination.currentPage + 1);
     dispatch(setCurrentPage(newPage));
     getCategory(newPage, pagination.rowsPerPage);
   };
-  
+
   const handleLastPageButtonClick = () => {
     dispatch(setCurrentPage(pagination.totalPages));
     getCategory(pagination.totalPages, pagination.rowsPerPage);
   };
+  const handleSearchChange = (e) => {
+    const searchValue = e.target.value;
+
+    if(searchValue === ''){
+      getCategory(pagination.currentPage, pagination.rowsPerPage);
+    }
+
+    filterData(searchValue)
+  } 
   return (
     <>
       <div className="flex flex-row justify-center w-full h-screen bg-gray-100">
@@ -105,8 +139,8 @@ export default function MenuListPage() {
                   </div>
                 </div>
                 <div className="flex flex-row justify-between items-center w-[94%] mt-6">
-                  <Input type="text" placeholder="Search..." className="w-[20%] bg-slate-300" />
-                  <Button onClick={handleAddCategoryClick} className="w-[15%] bg-blue-500 rounded-sm">
+                  <Input type="text" placeholder="Search..." className="w-[20%] bg-slate-300" onChange={handleSearchChange} />
+                  <Button onClick={() => handlePopupToggle('add')} className="w-[15%] bg-blue-500 rounded-sm">
                     Add Category
                   </Button>
                 </div>
@@ -120,12 +154,12 @@ export default function MenuListPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      
+
                       {categories.map((rowData, index) => (
                         <tr key={index} className="">
                           <td className="text-center font-roboto m-2">{rowData.name}</td>
                           <td className="items-center flex justify-center text-gray-700_01 font-roboto m-2">
-                            <Pencil color="rgb(67, 143, 254)" className="cursor-pointer" onClick={handleAddCategoryClick} />
+                            <Pencil color="rgb(67, 143, 254)" className="cursor-pointer" onClick={() => handlePopupToggle('edit', rowData.name, rowData.id)} />
                             <Trash2 className="cursor-pointer" onClick={() => handleDeleteCategory(rowData.name)} />
                           </td>
                         </tr>
@@ -134,33 +168,33 @@ export default function MenuListPage() {
                   </table>
                 </div>
                 <div className="flex flex-row justify-between items-center w-full mt-[15px]">
-              
+
                   <div className="flex flex-row justify-end items-center w-full gap-[18px]">
-                  <TablePagination
-              rowsPerPageOptions={[5, 10, 25]} 
-              component="div"
-              count={Number.isNaN(pagination.finalTotal) ? 0 : Number(pagination.finalTotal)}
-              rowsPerPage={pagination.rowsPerPage}
-              page={pagination.currentPage - 1} // Adjusted to 0-based index
-              onPageChange={handleChangePage} // Event handler for page change
-              onRowsPerPageChange={handleChangeRowsPerPage} // Event handler for rows per page change
-              ActionsComponent={() => (
-                <div style={{ flexShrink: 0, ml: 2.5 }} className="sticky bottom-0 z-10">
-                  <IconButton onClick={handleFirstPageButtonClick} disabled={pagination.currentPage === 1 || pagination.rowsPerPage === -1} aria-label="first page">
-                    <FirstPage />
-                  </IconButton>
-                  <IconButton onClick={handleBackButtonClick} disabled={pagination.currentPage === 1 || pagination.rowsPerPage === -1} aria-label="previous page">
-                    <KeyboardArrowLeft />
-                  </IconButton>
-                  <IconButton onClick={handleNextButtonClick} disabled={pagination.currentPage === pagination.totalPages || pagination.rowsPerPage === -1} aria-label="next page">
-                    <KeyboardArrowRight />
-                  </IconButton>
-                  <IconButton onClick={handleLastPageButtonClick} disabled={pagination.currentPage === pagination.totalPages || pagination.rowsPerPage === -1} aria-label="last page">
-                    <LastPage />
-                  </IconButton>
-                </div>
-              )}
-            />
+                    <TablePagination
+                       rowsPerPageOptions={[5, 10, 25]}
+                      component="div"
+                      count={Number.isNaN(pagination.finalTotal) ? 0 : Number(pagination.finalTotal)}
+                      rowsPerPage={pagination.rowsPerPage}
+                      page={pagination.currentPage - 1} // Adjusted to 0-based index
+                      onPageChange={handleChangePage} // Event handler for page change
+                      onRowsPerPageChange={handleChangeRowsPerPage} // Event handler for rows per page change
+                      ActionsComponent={() => (
+                        <div style={{ flexShrink: 0, ml: 2.5 }} className="sticky bottom-0 z-10">
+                          <IconButton onClick={handleFirstPageButtonClick} disabled={pagination.currentPage === 1 || pagination.rowsPerPage === -1} aria-label="first page">
+                            <FirstPage />
+                          </IconButton>
+                          <IconButton onClick={handleBackButtonClick} disabled={pagination.currentPage === 1 || pagination.rowsPerPage === -1} aria-label="previous page">
+                            <KeyboardArrowLeft />
+                          </IconButton>
+                          <IconButton onClick={handleNextButtonClick} disabled={pagination.currentPage === pagination.totalPages || pagination.rowsPerPage === -1} aria-label="next page">
+                            <KeyboardArrowRight />
+                          </IconButton>
+                          <IconButton onClick={handleLastPageButtonClick} disabled={pagination.currentPage === pagination.totalPages || pagination.rowsPerPage === -1} aria-label="last page">
+                            <LastPage />
+                          </IconButton>
+                        </div>
+                      )}
+                    />
                   </div>
                 </div>
                 {/* Search Bar */}
@@ -169,20 +203,20 @@ export default function MenuListPage() {
           </div>
         </div>
       </div>
-      {/* Add Category Popup */}
-      {showAddCategoryPopup && (
-        <Popup title="Add Category" onClose={() => setShowAddCategoryPopup(false)} >
+      {/* Add/Edit Category Popup */}
+      {showPopup && (
+        <Popup title={popupMode === 'edit' ? 'Edit Category' : 'Add Category'} onClose={() => setShowPopup(false)}>
           <div className="flex flex-col items-center justify-center">
             <Input
               type="text"
               name="category"
               placeholder="Category Name"
               className="w-full mb-4 p-2 border"
-              value={category}
+              value={popupMode === 'edit' ? editedCategory : category}
               onChange={handleChange}
             />
             <Button onClick={handlePopupSubmit} className="w-full bg-blue-500 text-white py-2 rounded">
-              Submit
+              {popupMode === 'edit' ? 'Submit' : 'Add'}
             </Button>
           </div>
         </Popup>

@@ -4,9 +4,12 @@ const bodyParser = require('body-parser');
 const pool = require('./config/db');
 const categoryRoutes = require('./routes/category.routes')
 const cors = require('cors')
+const menuRoutes = require('./routes/menu.routes')
 const app = express();
-app.use(cors())
+const fileUpload = require('express-fileupload'); // Add this line for file uploads
 
+app.use(cors())
+app.use(fileUpload())
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
@@ -16,6 +19,7 @@ app.get('/', (req, res) => {
 //****************************************Routes******************************************************* */ 
 
 app.use('/api/category', categoryRoutes)
+app.use('/api/menu', menuRoutes)
 
 
 
