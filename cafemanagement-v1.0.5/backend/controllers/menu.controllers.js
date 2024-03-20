@@ -89,9 +89,17 @@ const searchMenu = asyncHandler(async(req,res) => {
   }
 })
 
+const filterProducts = asyncHandler(async(req,res) => {
+    //filter products based on category
+    const {id} = req.body
+    const filterProductsQuery = await pool.query( 'SELECT * from menu WHERE categoryid = $1',[id])
+    res.status(200).json({result : filterProductsQuery.rows}) 
+})
+
 module.exports = {
     addMenu,
     getMenu,
     getCatgorylist,
-    searchMenu
+    searchMenu,
+    filterProducts
 }

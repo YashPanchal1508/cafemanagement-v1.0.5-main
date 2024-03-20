@@ -9,4 +9,6 @@ import { ReactTable } from "./ReactTable";
 import { Slider } from "./Slider";
 import { CheckBox } from "./CheckBox";
 import { RatingBar } from "./RatingBar";
-export { Input, Img, Button, Text, Heading, SelectBox, GoogleMap, ReactTable, Slider ,CheckBox,RatingBar };
+import { Radio } from "./Radio";
+import { TextArea } from "./TextArea";
+export { Input, Img, Button, Text, Heading, SelectBox, GoogleMap, ReactTable, Slider ,CheckBox,RatingBar,Radio ,TextArea};

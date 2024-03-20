@@ -70,10 +70,24 @@ const deleteCategory = asyncHandler(async (req, res) => {
 const getCategory = asyncHandler(async (req, res) => {
     try {
         let { page, limit } = req.query;
-
-        // Convert page and limit to numbers
+        console.log(typeof page)
         page = parseInt(page);
         limit = parseInt(limit);
+        if (page === null && limit === null) {
+    
+            const checkCategoryQuery = await pool.query('SELECT * FROM category');
+            console.log(checkCategoryQuery)
+            return res.status(200).json({
+                status: 200,
+                message: "Category fetch successfully",
+                data: checkCategoryQuery.rows,
+            });
+        }
+
+        // Convert page and limit to numbers
+      
+
+        // If page and limit are null, fetch all categories without pagination
 
         // Calculate the offset based on the current page and limit
         const offset = (page - 1) * limit;
@@ -101,7 +115,8 @@ const getCategory = asyncHandler(async (req, res) => {
         console.error('Error fetching categories:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
-})
+});
+
 
 const editCategory = asyncHandler(async(req,res) => {
         try {       

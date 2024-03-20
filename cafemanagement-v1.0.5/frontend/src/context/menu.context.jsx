@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext } from 'react';
 import { useDispatch } from 'react-redux';
-import { addMenu, setCategorylist,searchMenu } from '../redux/menuSlice'
+import { addMenu, setCategorylist,searchMenu,filterProducts } from '../redux/menuSlice'
 import { toast } from 'react-toastify';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -97,8 +97,23 @@ export const MenuProvider = ({ children }) => {
         }
     }
 
+    const filterCategory = async (id) => {
+        console.log(id)
+        const response = await fetch(`http://localhost:8000/api/menu/filterProducts`,{
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // You can add additional headers if needed
+            },
+            body: JSON.stringify({ id: id })
+        })
+
+        const result = await response.json();
+        dispatch(filterProducts(result))
+    }
+
     return (
-        <MenuContext.Provider value={{ addMenuItem, getMenu, getCatgory,filterData }}>
+        <MenuContext.Provider value={{ addMenuItem, getMenu, getCatgory,filterData,filterCategory }}>
             <ToastContainer
                 position="bottom-center"
                 autoClose={3000}

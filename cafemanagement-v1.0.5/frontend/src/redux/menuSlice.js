@@ -34,8 +34,13 @@ export const menuSlice = createSlice({
     searchMenu: (state, action) => {
       const {result} = action.payload
       state.data = result
-    }
+    },
+    filterProducts: (state, action) => {
+      const {result} = action.payload
+      state.data = result
+    },
+  
   }
 })
-export const { addMenu, setCategorylist,setCurrentPage ,setRowsPerPage,searchMenu} = menuSlice.actions
+export const { addMenu, setCategorylist,setCurrentPage ,setRowsPerPage,searchMenu,filterProducts} = menuSlice.actions
 export default menuSlice.reducer;

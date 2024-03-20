@@ -1,600 +1,207 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
-import { Text, Heading, Button, Img, RatingBar } from "../../components";
-
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Text } from '../../components/Text/index';
+import { Heading } from '../../components/Heading/index';
+import { Button } from '../../components/Button/index';
+import { Img } from '../../components/Img/index';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import { useSelector } from 'react-redux';
+import { useMenuContext } from "../../context/menu.context";
 export default function OrderonlinePage() {
+  const { data } = useSelector((state) => state.menu);
+  const categorylist = useSelector((state) => state.menu.categorylist);
+  const { getMenu, getCatgory,filterCategory } = useMenuContext();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [quantities, setQuantities] = useState([]);
+  const [orderList, setOrderList] = useState([]);
+
+  useEffect(() => {
+    getMenu(1, 6);
+    getCatgory();
+    const storedOrderList = JSON.parse(localStorage.getItem('orderList'));
+    const storedQuantities = JSON.parse(localStorage.getItem('quantities'));
+    if (storedOrderList && storedQuantities) {
+      setOrderList(storedOrderList);
+      setQuantities(storedQuantities);
+    }
+  }, []);
+
+  useEffect(() => {
+    const initialQuantities = new Array(data.length).fill(0);
+    setQuantities(prevQuantities => {
+      const updatedQuantities = [...prevQuantities];
+      data.forEach((product, index) => {
+        const storedQuantity = localStorage.getItem(`quantity_${product.productid}`);
+        if (storedQuantity !== null) {
+          updatedQuantities[index] = parseInt(storedQuantity);
+        }
+      });
+      return updatedQuantities;
+    });
+  }, [data]);
+
+  useEffect(() => {
+    if (location.state && location.state.orderList) {
+      setOrderList(location.state.orderList);
+      setQuantities(location.state.quantities);
+    }
+  }, [location.state]);
+
+  const increaseQuantity = (productId) => {
+    setQuantities(prevQuantities => {
+      const newQuantities = [...prevQuantities];
+      const productIndex = data.findIndex(item => item.productid === productId);
+      newQuantities[productIndex]++;
+      localStorage.setItem(`quantity_${productId}`, newQuantities[productIndex].toString());
+      return newQuantities;
+    });
+  };
+
+  const decreaseQuantity = (productId) => {
+    const productIndex = data.findIndex(item => item.productid === productId);
+    if (quantities[productIndex] > 0) {
+      setQuantities(prevQuantities => {
+        const newQuantities = [...prevQuantities];
+        newQuantities[productIndex]--;
+        localStorage.setItem(`quantity_${productId}`, newQuantities[productIndex].toString());
+        return newQuantities;
+      });
+    }
+  };
+
+  const addToOrderList = (productId) => {
+    const selectedProduct = data.find(product => product.productid === productId);
+    const isProductInOrderList = orderList.some(product => product.productid === productId);
+    if (!isProductInOrderList) {
+      const updatedOrderList = [...orderList, selectedProduct];
+      setOrderList(updatedOrderList);
+      localStorage.setItem('orderList', JSON.stringify(updatedOrderList));
+      localStorage.setItem('quantities', JSON.stringify(quantities));
+    }
+  };
+
+  const removeFromOrderList = (productId) => {
+    const updatedOrderList = orderList.filter(product => product.productid !== productId);
+    setOrderList(updatedOrderList);
+    localStorage.setItem('orderList', JSON.stringify(updatedOrderList));
+    localStorage.setItem('quantities', JSON.stringify(quantities));
+  };
+
+  const handleCheckout = () => {
+    if (orderList.length > 0) {
+      navigate('/checkout', { state: { orderList, quantities, data } });
+    } else {
+      // Optionally, you can provide some feedback to the user if the order list is empty
+      console.log("The order list is empty. Add products to proceed to checkout.");
+    }
+  };
+
+  const subtotal = orderList.reduce((acc, curr) => {
+    return acc + curr.price * quantities[data.findIndex(item => item.productid === curr.productid)];
+  }, 0);
+
+  const filterProductsByCategory = async(id) => {
+    await filterCategory(id)
+  }
+
   return (
     <>
       <Helmet>
         <title>Order Page</title>
         <meta name="description" content="Web site created using create-react-app" />
       </Helmet>
-      <div className="flex flex-col items-center justify-start w-full pt-[51px] gap-[139px] md:pt-5 bg-gray-50">
+      <div className="flex flex-col items-center justify-start w-full pt-[51px] gap-[139px] md:pt-5 bg-gray-50 ">
         <div className="flex flex-col  justify-start w-full gap-[103px] md:px-5 max-w-[1112px]">
-          
-          <div className="flex flex-col items-center justify-start w-full">
+          <div className="flex flex-col items-center justify-start w-full ">
             <div className="flex flex-col items-center justify-start w-full gap-[69px]">
               <Heading size="xl" as="h1" className="!font-opensans">
                 Menu
               </Heading>
               <div className="flex flex-col items-start justify-start w-full gap-[59px]">
-                <div className="flex flex-row md:flex-col justify-start w-full gap-7 md:gap-5">
-                  <div className="flex flex-row justify-start w-[18%] md:w-full">
-                    <Button color="gray_400_01" size="5xl" shape="round" className="w-full sm:px-5">
-                      All Categories
+                <div className="flex flex-row justify-between w-full">
+
+                {categorylist.map((category) => (
+                  <div key={category.id} className="flex flex-row justify-start w-full">
+                    <Button color="gray_400_01" size="5xl" shape="round" className="w-full sm:px-5 font-semibold"onClick={() => filterProductsByCategory(category.id)}>
+                      {category.name}
                     </Button>
                   </div>
-                  <div className="flex flex-row justify-start w-[21%] md:w-full">
-                    <Button size="5xl" shape="round" className="w-full sm:px-5 font-semibold">
-                      Pasta
-                    </Button>
-                  </div>
-                  <div className="flex flex-row md:flex-col w-[57%] md:w-full gap-7">
-                    <div className="flex flex-row justify-center w-[31%] md:w-full">
-                      <Button color="gray_400_01" size="5xl" shape="round" className="w-full sm:px-5">
-                        Pizza
-                      </Button>
-                    </div>
-                    <div className="flex flex-row justify-center w-[31%] md:w-full">
-                      <Button color="gray_400_01" size="5xl" shape="round" className="w-full sm:px-5">
-                        Dessert
-                      </Button>
-                    </div>
-                    <div className="flex flex-row justify-center w-[31%] md:w-full">
-                      <Button color="gray_400_01" size="5xl" shape="round" className="w-full sm:px-5">
-                        Drink
-                      </Button>
-                    </div>
-                  </div>
+                ))}
                 </div>
-                <div className="flex flex-row md:flex-col justify-start items-center w-full gap-[46px] md:gap-5">
-                  <div className="flex flex-col items-start justify-start w-[66%] md:w-full gap-12">
+                <div className="flex flex-row md:flex-col justify-start items-center w-full gap-[46px] md:gap-5 ">
+                  <div className="flex flex-col items-start justify-start w-full md:w-full gap-12">
                     <div className="flex flex-col items-start justify-start gap-2.5">
                       <Heading size="lg" as="h2">
                         PASTA
                       </Heading>
                       <div className="h-[2px] w-full bg-red-400" />
                     </div>
-                    <div className="flex flex-col items-center justify-start w-full">
-                      <div className="flex flex-col items-center justify-start w-full">
-                        <div className="justify-center w-full gap-[30px] grid-cols-3 md:grid-cols-2 md:gap-5 sm:grid-cols-1 grid">
-                          <div className="flex flex-col items-center justify-start w-full p-5 bg-white-A700 rounded-[45px]">
-                            <div className="flex flex-row justify-center items-center h-[173px] w-[173px]">
-                              <Img
-                                src="images/img_kisspng_italian.png"
-                                alt="spaghetti_one"
-                                className="h-[173px] w-[173px] md:h-auto rounded-[50%]"
-                              />
-                            </div>
-                            <Heading size="s" as="h3" className="mt-[21px] text-center">
-                              Spaghetti
-                            </Heading>
-                            <RatingBar
-                              value={5}
-                              isEditable={true}
-                              color="#f54748"
-                              activeColor="#f54748"
-                              size={15}
-                              className="flex justify-between w-[103px] mt-1 rounded-[1px]"
-                            />
-                            <Text size="xs" as="p" className="w-[94%] mt-[11px] !text-gray-800_01 text-center">
-                              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Egestas consequat
-                            </Text>
-                            <Heading size="xs" as="h4" className="mt-[22px]">
-                              $12.05
-                            </Heading>
-                            <div className="flex flex-row justify-center w-[66%] md:w-full mt-2.5">
-                              <div className="flex flex-row justify-between items-center w-full bg-gray-50_01 rounded-[16px]">
-                                <div className="flex flex-col items-center justify-start h-[33px] w-[33px]">
-                                  <div className="flex flex-col items-end justify-center h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-md rounded-[16px]">
-                                    <Img src="images/img_vector_25.svg" alt="image" className="h-px mt-[5px] mb-1" />
-                                  </div>
-                                </div>
-                                <Text as="p" className="!text-gray-900 !text-[16.62px]">
-                                  2
-                                </Text>
-                                <div className="flex flex-col items-end justify-start h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-sm rounded-[16px]">
-                                  <Img src="images/img_group_7721.svg" alt="image_one" className="h-[10px] w-[10px]" />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-center justify-start w-full p-5 bg-white-A700 rounded-[45px]">
+                    <div className="flex flex-wrap  w-[110%] gap-[30px] md:gap-5">
+                      {data.map(({ productname, price, productid, image }) => (
+                        <div className="flex flex-col items-center justify-start w-[250px] bg-white-A700 rounded-[45px]" key={productid}>
+                          <div className="flex justify-center items-center h-[173px] w-[173px]">
                             <Img
-                              src="images/img_picture.png"
-                              alt="picture_one"
-                              className="w-[174px] md:h-auto object-cover"
+                              src={image}
+                              alt={productname}
+                              className="h-[173px] w-[173px] md:h-auto rounded-[50%]"
                             />
-                            <Heading size="s" as="h5" className="mt-[21px] text-center">
-                              Linguine
-                            </Heading>
-                            <RatingBar
-                              value={5}
-                              isEditable={true}
-                              color="#f54748"
-                              activeColor="#f54748"
-                              size={15}
-                              className="flex justify-between w-[103px] mt-1 rounded-[1px]"
-                            />
-                            <Text size="xs" as="p" className="w-[94%] mt-[11px] !text-gray-800_01 text-center">
-                              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Egestas consequat
-                            </Text>
-                            <Heading size="xs" as="h6" className="mt-[22px]">
-                              $12.05
-                            </Heading>
-                            <div className="flex flex-row justify-center w-[66%] md:w-full mt-2.5">
-                              <div className="flex flex-row justify-between items-center w-full bg-gray-50_01 rounded-[16px]">
-                                <div className="flex flex-col items-center justify-start h-[33px] w-[33px]">
-                                  <div className="flex flex-col items-end justify-center h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-md rounded-[16px]">
-                                    <Img
-                                      src="images/img_vector_25.svg"
-                                      alt="vectortwentyfiv"
-                                      className="h-px mt-[5px] mb-1"
-                                    />
-                                  </div>
-                                </div>
-                                <Text as="p" className="!text-gray-900 !text-[16.62px]">
-                                  2
-                                </Text>
-                                <div className="flex flex-col items-center justify-start h-[33px] w-[33px]">
-                                  <div className="flex flex-col items-end justify-start h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-sm rounded-[16px]">
-                                    <Img src="images/img_group_7721.svg" alt="image" className="h-[10px] w-[10px]" />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
                           </div>
-                          <div className="flex flex-col items-center justify-start w-full p-5 bg-white-A700 rounded-[45px]">
-                            <Img
-                              src="images/img_picture.png"
-                              alt="picture_one"
-                              className="w-[174px] md:h-auto object-cover"
-                            />
-                            <Heading size="s" as="h5" className="mt-[21px] text-center">
-                              Capellini
-                            </Heading>
-                            <RatingBar
-                              value={5}
-                              isEditable={true}
-                              color="#f54748"
-                              activeColor="#f54748"
-                              size={15}
-                              className="flex justify-between w-[103px] mt-1 rounded-[1px]"
-                            />
-                            <Text size="xs" as="p" className="w-[94%] mt-[11px] !text-gray-800_01 text-center">
-                              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Egestas consequat
-                            </Text>
-                            <Heading size="xs" as="h6" className="mt-[22px]">
-                              $12.05
-                            </Heading>
-                            <div className="flex flex-row justify-center w-[66%] md:w-full mt-2.5">
-                              <div className="flex flex-row justify-between items-center w-full bg-gray-50_01 rounded-[16px]">
-                                <div className="flex flex-col items-center justify-start h-[33px] w-[33px]">
-                                  <div className="flex flex-col items-end justify-center h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-md rounded-[16px]">
-                                    <Img
-                                      src="images/img_vector_25.svg"
-                                      alt="vectortwentyfiv"
-                                      className="h-px mt-[5px] mb-1"
-                                    />
-                                  </div>
-                                </div>
-                                <Text as="p" className="!text-gray-900 !text-[16.62px]">
-                                  2
-                                </Text>
-                                <Button color="white_A700" size="xs" shape="round" className="w-[33px] shadow-sm">
-                                  <Img src="images/img_group_7721.svg" />
-                                </Button>
-                              </div>
-                            </div>
+                          <Heading size="s" as="h3" className="mt-[21px] text-center">
+                            {productname}
+                          </Heading>
+                          <Heading size="xs" as="h4" className="mt-[22px]">
+                            ${price}
+                          </Heading>
+                          <div className="flex items-center justify-center w-full gap-2">
+                            <button onClick={() => decreaseQuantity(productid)} className="px-3 py-1 bg-gray-200 rounded-full">-</button>
+                            <input type="number" className="w-16 text-center border border-gray-400 rounded" value={quantities[data.findIndex(item => item.productid === productid)]} readOnly />
+                            <button onClick={() => increaseQuantity(productid)} className="px-3 py-1 bg-gray-200 rounded-full">+</button>
                           </div>
-                          <div className="flex flex-col items-center justify-start w-full p-5 bg-white-A700 rounded-[45px]">
-                            <Img
-                              src="images/img_picture.png"
-                              alt="picture_one"
-                              className="w-[174px] md:h-auto object-cover"
-                            />
-                            <Heading size="s" as="h5" className="mt-[18px] text-center">
-                              Fettuccine
-                            </Heading>
-                            <RatingBar
-                              value={5}
-                              isEditable={true}
-                              color="#f54748"
-                              activeColor="#f54748"
-                              size={15}
-                              className="flex justify-between w-[103px] mt-[7px] rounded-[1px]"
-                            />
-                            <Text size="xs" as="p" className="w-[94%] mt-[11px] !text-gray-800_01 text-center">
-                              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Egestas consequat
-                            </Text>
-                            <Heading size="xs" as="h6" className="mt-[22px]">
-                              $12.05
-                            </Heading>
-                            <div className="flex flex-row justify-center w-[66%] md:w-full mt-2.5">
-                              <div className="flex flex-row justify-between items-center w-full bg-gray-50_01 rounded-[16px]">
-                                <div className="flex flex-col items-center justify-start h-[33px] w-[33px]">
-                                  <div className="flex flex-col items-end justify-center h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-md rounded-[16px]">
-                                    <Img
-                                      src="images/img_vector_25.svg"
-                                      alt="vectortwentyfiv"
-                                      className="h-px mt-[5px] mb-1"
-                                    />
-                                  </div>
-                                </div>
-                                <Text as="p" className="!text-gray-900 !text-[16.62px]">
-                                  0
-                                </Text>
-                                <div className="flex flex-col items-end justify-start h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-sm rounded-[16px]">
-                                  <Img src="images/img_group_7721.svg" alt="image" className="h-[10px] w-[10px]" />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-center justify-start w-full p-5 bg-white-A700 rounded-[45px]">
-                            <Img
-                              src="images/img_picture.png"
-                              alt="picture_one"
-                              className="w-[174px] md:h-auto object-cover"
-                            />
-                            <Heading size="s" as="h5" className="mt-[21px] text-center">
-                              Linguine
-                            </Heading>
-                            <RatingBar
-                              value={5}
-                              isEditable={true}
-                              color="#f54748"
-                              activeColor="#f54748"
-                              size={15}
-                              className="flex justify-between w-[103px] mt-1 rounded-[1px]"
-                            />
-                            <Text size="xs" as="p" className="w-[94%] mt-[11px] !text-gray-800_01 text-center">
-                              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Egestas consequat
-                            </Text>
-                            <Heading size="xs" as="h6" className="mt-[22px]">
-                              $12.05
-                            </Heading>
-                            <div className="flex flex-row justify-center w-[66%] md:w-full mt-2.5">
-                              <div className="flex flex-row justify-between items-center w-full bg-gray-50_01 rounded-[16px]">
-                                <div className="flex flex-col items-center justify-start h-[33px] w-[33px]">
-                                  <div className="flex flex-col items-end justify-center h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-md rounded-[16px]">
-                                    <Img
-                                      src="images/img_vector_25.svg"
-                                      alt="vectortwentyfiv"
-                                      className="h-px mt-[5px] mb-1"
-                                    />
-                                  </div>
-                                </div>
-                                <Text as="p" className="!text-gray-900 !text-[16.62px]">
-                                  0
-                                </Text>
-                                <div className="flex flex-col items-center justify-start h-[33px] w-[33px]">
-                                  <div className="flex flex-col items-end justify-start h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-sm rounded-[16px]">
-                                    <Img src="images/img_group_7721.svg" alt="image" className="h-[10px] w-[10px]" />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-center justify-start w-full p-5 bg-white-A700 rounded-[45px]">
-                            <Img
-                              src="images/img_picture.png"
-                              alt="picture_one"
-                              className="w-[174px] md:h-auto object-cover"
-                            />
-                            <Heading size="s" as="h5" className="mt-[21px] text-center">
-                              Capellini
-                            </Heading>
-                            <RatingBar
-                              value={5}
-                              isEditable={true}
-                              color="#f54748"
-                              activeColor="#f54748"
-                              size={15}
-                              className="flex justify-between w-[103px] mt-1 rounded-[1px]"
-                            />
-                            <Text size="xs" as="p" className="w-[94%] mt-[11px] !text-gray-800_01 text-center">
-                              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Egestas consequat
-                            </Text>
-                            <Heading size="xs" as="h6" className="mt-[22px]">
-                              $12.05
-                            </Heading>
-                            <div className="flex flex-row justify-center w-[66%] md:w-full mt-2.5">
-                              <div className="flex flex-row justify-between items-center w-full bg-gray-50_01 rounded-[16px]">
-                                <div className="flex flex-col items-center justify-start h-[33px] w-[33px]">
-                                  <div className="flex flex-col items-end justify-center h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-md rounded-[16px]">
-                                    <Img
-                                      src="images/img_vector_25.svg"
-                                      alt="vectortwentyfiv"
-                                      className="h-px mt-[5px] mb-1"
-                                    />
-                                  </div>
-                                </div>
-                                <Text as="p" className="!text-gray-900 !text-[16.62px]">
-                                  0
-                                </Text>
-                                <div className="flex flex-col items-center justify-start h-[33px] w-[33px]">
-                                  <div className="flex flex-col items-end justify-start h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-sm rounded-[16px]">
-                                    <Img src="images/img_group_7721.svg" alt="image" className="h-[10px] w-[10px]" />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-center justify-start w-full p-5 bg-white-A700 rounded-[45px]">
-                            <Img
-                              src="images/img_picture.png"
-                              alt="picture_one"
-                              className="w-[174px] md:h-auto object-cover"
-                            />
-                            <Heading size="s" as="h5" className="mt-[18px] text-center">
-                              Fusilli
-                            </Heading>
-                            <RatingBar
-                              value={5}
-                              isEditable={true}
-                              color="#f54748"
-                              activeColor="#f54748"
-                              size={15}
-                              className="flex justify-between w-[103px] mt-[7px] rounded-[1px]"
-                            />
-                            <Text size="xs" as="p" className="w-[94%] mt-[11px] !text-gray-800_01 text-center">
-                              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Egestas consequat
-                            </Text>
-                            <Heading size="xs" as="h6" className="mt-[22px]">
-                              $12.05
-                            </Heading>
-                            <div className="flex flex-row justify-center w-[66%] md:w-full mt-2.5">
-                              <div className="flex flex-row justify-between items-center w-full bg-gray-50_01 rounded-[16px]">
-                                <div className="flex flex-col items-center justify-start h-[33px] w-[33px]">
-                                  <div className="flex flex-col items-end justify-center h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-md rounded-[16px]">
-                                    <Img
-                                      src="images/img_vector_25.svg"
-                                      alt="vectortwentyfiv"
-                                      className="h-px mt-[5px] mb-1"
-                                    />
-                                  </div>
-                                </div>
-                                <Text as="p" className="!text-gray-900 !text-[16.62px]">
-                                  0
-                                </Text>
-                                <div className="flex flex-col items-end justify-start h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-sm rounded-[16px]">
-                                  <Img src="images/img_group_7721.svg" alt="image" className="h-[10px] w-[10px]" />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-center justify-start w-full p-5 bg-white-A700 rounded-[45px]">
-                            <Img
-                              src="images/img_picture.png"
-                              alt="picture_one"
-                              className="w-[174px] md:h-auto object-cover"
-                            />
-                            <Heading size="s" as="h5" className="mt-[18px] text-center">
-                              Farfalle
-                            </Heading>
-                            <RatingBar
-                              value={5}
-                              isEditable={true}
-                              color="#f54748"
-                              activeColor="#f54748"
-                              size={15}
-                              className="flex justify-between w-[103px] mt-[7px] rounded-[1px]"
-                            />
-                            <Text size="xs" as="p" className="w-[94%] mt-[11px] !text-gray-800_01 text-center">
-                              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Egestas consequat
-                            </Text>
-                            <Heading size="xs" as="h6" className="mt-[22px]">
-                              $12.05
-                            </Heading>
-                            <div className="flex flex-row justify-center w-[66%] md:w-full mt-2.5">
-                              <div className="flex flex-row justify-between items-center w-full bg-gray-50_01 rounded-[16px]">
-                                <div className="flex flex-col items-end justify-center h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-md rounded-[16px]">
-                                  <Img
-                                    src="images/img_vector_25.svg"
-                                    alt="vectortwentyfiv"
-                                    className="h-px mt-[5px] mb-1"
-                                  />
-                                </div>
-                                <Text as="p" className="!text-gray-900 !text-[16.62px]">
-                                  0
-                                </Text>
-                                <Button color="white_A700" size="xs" shape="round" className="w-[33px] shadow-sm">
-                                  <Img src="images/img_group_7721.svg" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-center justify-start w-full p-5 bg-white-A700 rounded-[45px]">
-                            <Img
-                              src="images/img_picture.png"
-                              alt="picture_one"
-                              className="w-[174px] md:h-auto object-cover"
-                            />
-                            <Heading size="s" as="h5" className="mt-[19px] text-center">
-                              Penne Alla Vodak
-                            </Heading>
-                            <RatingBar
-                              value={5}
-                              isEditable={true}
-                              color="#f54748"
-                              activeColor="#f54748"
-                              size={15}
-                              className="flex justify-between w-[103px] mt-1.5 rounded-[1px]"
-                            />
-                            <Text size="xs" as="p" className="w-[94%] mt-[11px] !text-gray-800_01 text-center">
-                              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Egestas consequat
-                            </Text>
-                            <Heading size="xs" as="h6" className="mt-[22px]">
-                              $12.05
-                            </Heading>
-                            <div className="flex flex-row justify-center w-[66%] md:w-full mt-2.5">
-                              <div className="flex flex-row justify-between items-center w-full bg-gray-50_01 rounded-[16px]">
-                                <div className="flex flex-col items-end justify-center h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-md rounded-[16px]">
-                                  <Img
-                                    src="images/img_vector_25.svg"
-                                    alt="vectortwentyfiv"
-                                    className="h-px mt-[5px] mb-1"
-                                  />
-                                </div>
-                                <Text as="p" className="!text-gray-900 !text-[16.62px]">
-                                  0
-                                </Text>
-                                <div className="flex flex-col items-center justify-start h-[33px] w-[33px]">
-                                  <div className="flex flex-col items-end justify-start h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-sm rounded-[16px]">
-                                    <Img src="images/img_group_7721.svg" alt="image" className="h-[10px] w-[10px]" />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                          <Button onClick={() => addToOrderList(productid)} size="sm" className="mt-2">
+                            Add to Order
+                          </Button>
                         </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
                   <div className="flex flex-col items-center justify-start w-[31%] md:w-full">
-                    <div className="flex flex-col items-center justify-center w-full gap-[53px] py-[45px] md:py-5 bg-white-A700 shadow-xs rounded-[20px]">
+                    <div className="flex flex-col items-center justify-center w-full gap-[30px] py-[45px] md:py-5 bg-white-A700 shadow-xs rounded-[20px]">
                       <div className="flex flex-col items-center justify-start w-full gap-[46px]">
                         <Heading size="lg" as="h3">
                           Order list
                         </Heading>
                         <div className="h-px w-full bg-blue_gray-100" />
                       </div>
-                      <div className="flex flex-col w-[83%] gap-16 md:gap-10">
-                        <div className="flex flex-col items-center justify-start w-full gap-[31px]">
-                          <div className="flex flex-row justify-between items-start w-full">
-                            <Heading as="h4" className="!text-black-900">
-                              Spaghetti
-                            </Heading>
-                            <div className="flex flex-col items-center justify-start h-[24px] w-[24px] mt-1">
-                              <Img src="images/img_group_7758.svg" alt="spaghetti_two" className="h-[24px] w-[24px]" />
+                      {orderList.map((product) => (
+                        <div key={product.productid} className="flex flex-col w-full p-4 rounded border">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <Text size="lg" as="p" className="font-semibold">{product.productname}</Text>
+                            </div>
+                            <div>
+                              <Text size="lg" as="p" className="text-gray-600">${product.price}</Text>
                             </div>
                           </div>
-                          <div className="flex flex-row justify-between items-center w-full">
-                            <div className="flex flex-row justify-center w-[42%]">
-                              <div className="flex flex-row justify-between items-center w-full bg-gray-50_01 rounded-[16px]">
-                                <Button color="white_A700" size="xs" shape="round" className="w-[33px] shadow-md">
-                                  <Img src="images/img_vector_25.svg" />
-                                </Button>
-                                <Text as="p" className="!text-gray-900 !text-[16.62px]">
-                                  2
-                                </Text>
-                                <div className="flex flex-col items-end justify-start h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-sm rounded-[16px]">
-                                  <Img src="images/img_group_7721.svg" alt="image" className="h-[10px] w-[10px]" />
-                                </div>
-                              </div>
+                          <div className="flex items-center justify-between w-full gap-4">
+                            <div className="flex items-center gap-2">
+                              Quantity: {quantities[data.findIndex(item => item.productid === product.productid)]}
                             </div>
-                            <Text size="lg" as="p" className="!text-gray-900">
-                              $24.1
-                            </Text>
+                            <button onClick={() => removeFromOrderList(product.productid)} className="px-4 py-2  text-white rounded-full  transition-colors duration-300">
+                              <FontAwesomeIcon icon={faTrash} />
+                            </button>
                           </div>
                         </div>
-                        <div className="flex flex-col items-center justify-start w-full gap-[31px]">
-                          <div className="flex flex-row justify-between items-start w-full">
-                            <Heading as="h4" className="!text-black-900">
-                              Linguine
-                            </Heading>
-                            <div className="flex flex-col items-center justify-start h-[24px] w-[24px] mt-1">
-                              <Img src="images/img_group_7758.svg" alt="image" className="h-[24px] w-[24px]" />
-                            </div>
-                          </div>
-                          <div className="flex flex-row justify-between items-center w-full">
-                            <div className="flex flex-row justify-center w-[42%]">
-                              <div className="flex flex-row justify-between items-center w-full bg-gray-50_01 rounded-[16px]">
-                                <div className="flex flex-col items-end justify-center h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-md rounded-[16px]">
-                                  <Img
-                                    src="images/img_vector_25.svg"
-                                    alt="vectortwentyfiv"
-                                    className="h-px mt-[5px] mb-1"
-                                  />
-                                </div>
-                                <Text as="p" className="!text-gray-900 !text-[16.62px]">
-                                  2
-                                </Text>
-                                <div className="flex flex-col items-center justify-start h-[33px] w-[33px]">
-                                  <div className="flex flex-col items-end justify-start h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-sm rounded-[16px]">
-                                    <Img
-                                      src="images/img_group_7721.svg"
-                                      alt="image_one"
-                                      className="h-[10px] w-[10px]"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <Text size="lg" as="p" className="!text-gray-900">
-                              $35.7
-                            </Text>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-center justify-start w-full gap-[31px]">
-                          <div className="flex flex-row justify-between items-start w-full">
-                            <Heading as="h4" className="!text-black-900">
-                              Capellini
-                            </Heading>
-                            <div className="flex flex-col items-center justify-start h-[24px] w-[24px] mt-1">
-                              <Img src="images/img_group_7758.svg" alt="image" className="h-[24px] w-[24px]" />
-                            </div>
-                          </div>
-                          <div className="flex flex-row justify-between items-center w-full">
-                            <div className="flex flex-row justify-center w-[42%]">
-                              <div className="flex flex-row justify-between items-center w-full bg-gray-50_01 rounded-[16px]">
-                                <div className="flex flex-col items-end justify-center h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-md rounded-[16px]">
-                                  <Img
-                                    src="images/img_vector_25.svg"
-                                    alt="vectortwentyfiv"
-                                    className="h-px mt-[5px] mb-1"
-                                  />
-                                </div>
-                                <Text as="p" className="!text-gray-900 !text-[16.62px]">
-                                  2
-                                </Text>
-                                <div className="flex flex-col items-end justify-start h-[33px] w-[33px] p-2.5 bg-white-A700 shadow-sm rounded-[16px]">
-                                  <Img src="images/img_group_7721.svg" alt="image_one" className="h-[10px] w-[10px]" />
-                                </div>
-                              </div>
-                            </div>
-                            <Text size="lg" as="p" className="!text-gray-900">
-                              $18.5
-                            </Text>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-row justify-center w-full">
-                        <div className="h-[168px] w-full sm:w-full relative">
-                          <Img
-                            src="images/img_line.svg"
-                            alt="line_one"
-                            className="justify-center h-[168px] left-0 bottom-0 right-0 top-0 m-auto absolute"
-                          />
-                          <div className="flex flex-row justify-center w-max h-max left-0 bottom-0 right-0 top-0 m-auto absolute">
-                            <div className="flex flex-col items-start justify-start w-full gap-5">
-                              <Heading as="h4" className="!text-black-900">
-                                Voucher Code
-                              </Heading>
-                              <div className="flex flex-row justify-start gap-[22px]">
-                                <Button
-                                  color="gray_50_01"
-                                  size="4xl"
-                                  shape="round"
-                                  className="sm:px-5 min-w-[201px] !rounded-[15px]"
-                                >
-                                  FREETOEAT
-                                </Button>
-                                <Button color="blue_400" shape="round" className="w-[60px] !rounded-[15px]">
-                                  <Img src="images/img_group_170.svg" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      ))}
                       <div className="flex flex-col items-center justify-start w-[83%] md:w-full gap-[26px]">
                         <div className="flex flex-row justify-between w-full">
                           <Heading as="h4" className="mb-px !text-black-900">
                             Subtotal
                           </Heading>
                           <Text size="lg" as="p" className="!text-gray-900">
-                            $78.3
+                            ${subtotal.toFixed(2)}
                           </Text>
                         </div>
                         <div className="flex flex-row justify-between w-full">
@@ -602,15 +209,7 @@ export default function OrderonlinePage() {
                             Tax fee
                           </Heading>
                           <Text size="lg" as="p" className="!text-gray-900">
-                            $3.5
-                          </Text>
-                        </div>
-                        <div className="flex flex-row justify-between w-full">
-                          <Heading as="h4" className="mb-px !text-black-900">
-                            Voucher
-                          </Heading>
-                          <Text size="lg" as="p" className="!text-gray-900">
-                            $5.0
+                            $3.50
                           </Text>
                         </div>
                         <div className="flex flex-row justify-between w-full">
@@ -618,7 +217,7 @@ export default function OrderonlinePage() {
                             Total
                           </Heading>
                           <Text size="lg" as="p" className="!text-gray-900">
-                            $76.8
+                            ${(subtotal + 3.5).toFixed(2)}
                           </Text>
                         </div>
                       </div>
@@ -626,55 +225,55 @@ export default function OrderonlinePage() {
                         size="2xl"
                         shape="round"
                         className="mb-1 sm:px-5 font-semibold bg-blue_A200 min-w-[283px] !rounded-[15px] sm:min-w-full"
+                        onClick={handleCheckout}
                       >
                         Checkout
                       </Button>
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-row sm:flex-col justify-start items-center w-[22%] md:w-full ml-[242px] gap-2.5 md:ml-5 sm:gap-5">
-                  <Img src="images/img_arrow_left.svg" alt="arrowleft_one" className="h-[15px] w-[15px]" />
-                  <div className="flex flex-row justify-between w-[71%] sm:w-full">
-                    <div className="flex flex-col items-center justify-start h-[35px] w-[35px]">
+              </div>
+              <div className="flex flex-row sm:flex-col justify-start items-center w-[22%] md:w-full ml-[242px] gap-2.5 md:ml-5 sm:gap-5">
+                <Img src="images/img_arrow_left.svg" alt="arrowleft_one" className="h-[15px] w-[15px]" />
+                <div className="flex flex-row justify-between w-[71%] sm:w-full">
+                  <div className="flex flex-col items-center justify-start h-[35px] w-[35px]">
+                    <Button
+                      color="gray_900"
+                      size="sm"
+                      className="tracking-[-0.50px] font-inter font-semibold min-w-[35px] rounded sm:min-w-full"
+                    >
+                      1
+                    </Button>
+                  </div>
+                  <div className="flex flex-row w-[48%] gap-2.5">
+                    <div className="flex flex-col items-center justify-start h-[35px] w-[44%]">
                       <Button
-                        color="gray_900"
+                        color="gray_200"
                         size="sm"
                         className="tracking-[-0.50px] font-inter font-semibold min-w-[35px] rounded sm:min-w-full"
                       >
-                        1
+                        2
                       </Button>
                     </div>
-                    <div className="flex flex-row w-[48%] gap-2.5">
-                      <div className="flex flex-col items-center justify-start h-[35px] w-[44%]">
-                        <Button
-                          color="gray_200"
-                          size="sm"
-                          className="tracking-[-0.50px] font-inter font-semibold min-w-[35px] rounded sm:min-w-full"
-                        >
-                          2
-                        </Button>
-                      </div>
-                      <div className="flex flex-col items-center justify-start h-[35px] w-[44%]">
-                        <Button
-                          color="gray_200"
-                          size="sm"
-                          className="tracking-[-0.50px] font-inter font-semibold min-w-[35px] rounded sm:min-w-full"
-                        >
-                          3
-                        </Button>
-                      </div>
+                    <div className="flex flex-col items-center justify-start h-[35px] w-[44%]">
+                      <Button
+                        color="gray_200"
+                        size="sm"
+                        className="tracking-[-0.50px] font-inter font-semibold min-w-[35px] rounded sm:min-w-full"
+                      >
+                        3
+                      </Button>
                     </div>
-                    <Button color="gray_200" size="xs" className="w-[35px] rounded">
-                      <Img src="images/img_bx_bx_dots_horizontal_rounded.svg" />
-                    </Button>
                   </div>
-                  <Img src="images/img_akar_icons_chevron_left.svg" alt="akaricons_one" className="h-[15px] w-[15px]" />
+                  <Button color="gray_200" size="xs" className="w-[35px] rounded">
+                    <Img src="images/img_bx_bx_dots_horizontal_rounded.svg" />
+                  </Button>
                 </div>
+                <Img src="images/img_akar_icons_chevron_left.svg" alt="akaricons_one" className="h-[15px] w-[15px]" />
               </div>
             </div>
           </div>
         </div>
-        
       </div>
     </>
   );
