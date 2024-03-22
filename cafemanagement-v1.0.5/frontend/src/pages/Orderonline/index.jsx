@@ -7,105 +7,171 @@ import { Button } from '../../components/Button/index';
 import { Img } from '../../components/Img/index';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useMenuContext } from "../../context/menu.context";
+import { setOrder, deleteItem } from "redux/orderSlice";
+import {setCurrentPage, setRowsPerPage } from '../../redux/menuSlice'
+import { TablePagination } from '@mui/material';
+import { IconButton } from '@mui/material';
+import { FirstPage, KeyboardArrowLeft, KeyboardArrowRight, LastPage } from '@mui/icons-material';
+
 export default function OrderonlinePage() {
-  const { data } = useSelector((state) => state.menu);
+  const { data,pagination } = useSelector((state) => state.menu);
   const categorylist = useSelector((state) => state.menu.categorylist);
-  const { getMenu, getCatgory,filterCategory } = useMenuContext();
+  const { cartlist } = useSelector((state) => state.order)
+  const subtotal = useSelector((state) => state.order.subtotal);
+  const { getMenu, getCatgory, filterCategory } = useMenuContext();
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
   const [quantities, setQuantities] = useState([]);
-  const [orderList, setOrderList] = useState([]);
+  // const [orderList, setOrderList] = useState([]);
 
   useEffect(() => {
-    getMenu(1, 6);
+    getMenu(pagination.currentPage, pagination.rowsPerPage);
     getCatgory();
-    const storedOrderList = JSON.parse(localStorage.getItem('orderList'));
-    const storedQuantities = JSON.parse(localStorage.getItem('quantities'));
-    if (storedOrderList && storedQuantities) {
-      setOrderList(storedOrderList);
-      setQuantities(storedQuantities);
-    }
+
   }, []);
 
   useEffect(() => {
-    const initialQuantities = new Array(data.length).fill(0);
-    setQuantities(prevQuantities => {
-      const updatedQuantities = [...prevQuantities];
-      data.forEach((product, index) => {
-        const storedQuantity = localStorage.getItem(`quantity_${product.productid}`);
-        if (storedQuantity !== null) {
-          updatedQuantities[index] = parseInt(storedQuantity);
-        }
-      });
-      return updatedQuantities;
-    });
+    if (data && data.length > 0 && !quantities.length) {
+      setQuantities(Array(data.length).fill(0));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
-  useEffect(() => {
-    if (location.state && location.state.orderList) {
-      setOrderList(location.state.orderList);
-      setQuantities(location.state.quantities);
-    }
-  }, [location.state]);
 
-  const increaseQuantity = (productId) => {
-    setQuantities(prevQuantities => {
-      const newQuantities = [...prevQuantities];
-      const productIndex = data.findIndex(item => item.productid === productId);
-      newQuantities[productIndex]++;
-      localStorage.setItem(`quantity_${productId}`, newQuantities[productIndex].toString());
-      return newQuantities;
-    });
-  };
 
-  const decreaseQuantity = (productId) => {
-    const productIndex = data.findIndex(item => item.productid === productId);
-    if (quantities[productIndex] > 0) {
-      setQuantities(prevQuantities => {
+  const increaseQuantity = (index) => {
+    if (data && data[index] && data[index].quantity !== undefined) {
+      setQuantities((prevQuantities) => {
         const newQuantities = [...prevQuantities];
-        newQuantities[productIndex]--;
-        localStorage.setItem(`quantity_${productId}`, newQuantities[productIndex].toString());
+        newQuantities[index] = Math.min(
+          newQuantities[index] + 1,
+          data[index].quantity
+        );
         return newQuantities;
       });
+
+      // Find the selected item in the cartlist
+      const selectedItemIndex = cartlist.findIndex(item => item.productid === data[index].productid);
+
+      // If the selected item is already in the cartlist, update its quantity
+      if (selectedItemIndex !== -1) {
+        const updatedCartList = cartlist.map((item, idx) => {
+          if (idx === selectedItemIndex) {
+            return {
+              ...item,
+              orderedQuantity: item.orderedQuantity + 1
+            };
+          }
+          return [item];
+        });
+        dispatch(setOrder({ data: updatedCartList, mode: "inc" }));
+      } else {
+        // If the selected item is not in the cartlist, add it
+        const selectedItem = {
+          ...data[index],
+          orderedQuantity: 1,
+        };
+        dispatch(setOrder({ data: [...cartlist, selectedItem], mode: "inc" }));
+      }
     }
   };
 
-  const addToOrderList = (productId) => {
-    const selectedProduct = data.find(product => product.productid === productId);
-    const isProductInOrderList = orderList.some(product => product.productid === productId);
-    if (!isProductInOrderList) {
-      const updatedOrderList = [...orderList, selectedProduct];
-      setOrderList(updatedOrderList);
-      localStorage.setItem('orderList', JSON.stringify(updatedOrderList));
-      localStorage.setItem('quantities', JSON.stringify(quantities));
+  const decreaseQuantity = (index) => {
+    if (data && data[index] && data[index].quantity !== undefined) {
+      setQuantities((prevQuantities) => {
+        const newQuantities = [...prevQuantities];
+        newQuantities[index] = Math.max(newQuantities[index] - 1, 0);
+        return newQuantities;
+      });
+
+      // Create a new array with updated cartlist
+      const updatedOrderList = cartlist.map((item) => {
+        if (item.productid === data[index].productid) {
+          return {
+            ...item,
+            orderedQuantity: Math.max(item.orderedQuantity - 1, 0),
+          };
+        }
+        return item;
+      });
+
+      // Dispatch the updated cartlist
+      dispatch(setOrder({ data: updatedOrderList }));
     }
+  };
+
+
+
+  const addToOrderList = (productId) => {
+    // const selectedProduct = data.find(product => product.productid === productId);
+    // const isProductInOrderList = orderList.some(product => product.productid === productId);
+    // if (!isProductInOrderList) {
+    //   const updatedOrderList = [...orderList, selectedProduct];
+    //   setOrderList(updatedOrderList);
+    //   localStorage.setItem('orderList', JSON.stringify(updatedOrderList));
+    //   localStorage.setItem('quantities', JSON.stringify(quantities));
+    // }
   };
 
   const removeFromOrderList = (productId) => {
-    const updatedOrderList = orderList.filter(product => product.productid !== productId);
-    setOrderList(updatedOrderList);
-    localStorage.setItem('orderList', JSON.stringify(updatedOrderList));
-    localStorage.setItem('quantities', JSON.stringify(quantities));
+    console.log(productId)
+    dispatch(deleteItem(productId));
+
   };
 
   const handleCheckout = () => {
-    if (orderList.length > 0) {
-      navigate('/checkout', { state: { orderList, quantities, data } });
+    if (cartlist.length > 0) {
+      console.log(cartlist)
+      navigate('/checkout', { state: { cartlist, quantities, data } });
     } else {
       // Optionally, you can provide some feedback to the user if the order list is empty
       console.log("The order list is empty. Add products to proceed to checkout.");
     }
   };
 
-  const subtotal = orderList.reduce((acc, curr) => {
-    return acc + curr.price * quantities[data.findIndex(item => item.productid === curr.productid)];
-  }, 0);
+  const taxFee = subtotal * 0.18;
+  const total = subtotal + taxFee;
 
-  const filterProductsByCategory = async(id) => {
+  const filterProductsByCategory = async (id) => {
     await filterCategory(id)
   }
+
+  const newPage = 1
+  const handleChangePage = () => {
+    dispatch(setCurrentPage(newPage + 1));
+    getMenu(pagination.currentPage, pagination.rowsPerPage);
+  }
+  const handleChangeRowsPerPage = (event) => {
+    const newRowsPerPage = event.target.value === '-1' ? parseInt(count) : parseInt(event.target.value, 10);
+    dispatch(setRowsPerPage(newRowsPerPage));
+    getMenu(1, newRowsPerPage);
+
+  };
+  const handleFirstPageButtonClick = () => {
+    dispatch(setCurrentPage(1));
+    getMenu(1, pagination.rowsPerPage);
+  };
+
+  const handleBackButtonClick = () => {
+    const newPage = Math.max(1, pagination.currentPage - 1);
+    dispatch(setCurrentPage(newPage));
+    getMenu(newPage, pagination.rowsPerPage);
+  };
+
+  const handleNextButtonClick = () => {
+    const newPage = Math.min(pagination.totalPages, pagination.currentPage + 1);
+    dispatch(setCurrentPage(newPage));
+    getMenu(newPage, pagination.rowsPerPage);
+  };
+
+  const handleLastPageButtonClick = () => {
+    dispatch(setCurrentPage(pagination.totalPages));
+    getMenu(pagination.totalPages, pagination.rowsPerPage);
+  };
+
 
   return (
     <>
@@ -123,13 +189,13 @@ export default function OrderonlinePage() {
               <div className="flex flex-col items-start justify-start w-full gap-[59px]">
                 <div className="flex flex-row justify-between w-full">
 
-                {categorylist.map((category) => (
-                  <div key={category.id} className="flex flex-row justify-start w-full">
-                    <Button color="gray_400_01" size="5xl" shape="round" className="w-full sm:px-5 font-semibold"onClick={() => filterProductsByCategory(category.id)}>
-                      {category.name}
-                    </Button>
-                  </div>
-                ))}
+                  {categorylist.map((category) => (
+                    <div key={category.id} className="flex flex-row justify-start w-full">
+                      <Button color="gray_400_01" size="5xl" shape="round" className="w-full sm:px-5 font-semibold" onClick={() => filterProductsByCategory(category.id)}>
+                        {category.name}
+                      </Button>
+                    </div>
+                  ))}
                 </div>
                 <div className="flex flex-row md:flex-col justify-start items-center w-full gap-[46px] md:gap-5 ">
                   <div className="flex flex-col items-start justify-start w-full md:w-full gap-12">
@@ -140,7 +206,7 @@ export default function OrderonlinePage() {
                       <div className="h-[2px] w-full bg-red-400" />
                     </div>
                     <div className="flex flex-wrap  w-[110%] gap-[30px] md:gap-5">
-                      {data.map(({ productname, price, productid, image }) => (
+                      {data.map(({ productname, price, productid, image }, index) => (
                         <div className="flex flex-col items-center justify-start w-[250px] bg-white-A700 rounded-[45px]" key={productid}>
                           <div className="flex justify-center items-center h-[173px] w-[173px]">
                             <Img
@@ -156,13 +222,16 @@ export default function OrderonlinePage() {
                             ${price}
                           </Heading>
                           <div className="flex items-center justify-center w-full gap-2">
-                            <button onClick={() => decreaseQuantity(productid)} className="px-3 py-1 bg-gray-200 rounded-full">-</button>
-                            <input type="number" className="w-16 text-center border border-gray-400 rounded" value={quantities[data.findIndex(item => item.productid === productid)]} readOnly />
-                            <button onClick={() => increaseQuantity(productid)} className="px-3 py-1 bg-gray-200 rounded-full">+</button>
+                            <button onClick={() => decreaseQuantity(index)} className="px-3 py-1 bg-gray-200 rounded-full">-</button>
+                            <p className="text-gray-900 text-[16.62px] ">
+                              {cartlist.some((orderItem) => orderItem.productid === productid)
+                                ? cartlist.find((orderItem) => orderItem.productid === productid).orderedQuantity
+                                : 0}
+                            </p>
+                            <button onClick={() => increaseQuantity(index)} className="px-3 py-1 bg-gray-200 rounded-full">+</button>
+
                           </div>
-                          <Button onClick={() => addToOrderList(productid)} size="sm" className="mt-2">
-                            Add to Order
-                          </Button>
+
                         </div>
                       ))}
                     </div>
@@ -175,7 +244,7 @@ export default function OrderonlinePage() {
                         </Heading>
                         <div className="h-px w-full bg-blue_gray-100" />
                       </div>
-                      {orderList.map((product) => (
+                      {cartlist.map((product) => (
                         <div key={product.productid} className="flex flex-col w-full p-4 rounded border">
                           <div className="flex justify-between items-center">
                             <div>
@@ -187,7 +256,7 @@ export default function OrderonlinePage() {
                           </div>
                           <div className="flex items-center justify-between w-full gap-4">
                             <div className="flex items-center gap-2">
-                              Quantity: {quantities[data.findIndex(item => item.productid === product.productid)]}
+                              Quantity: {product.orderedQuantity}
                             </div>
                             <button onClick={() => removeFromOrderList(product.productid)} className="px-4 py-2  text-white rounded-full  transition-colors duration-300">
                               <FontAwesomeIcon icon={faTrash} />
@@ -201,7 +270,7 @@ export default function OrderonlinePage() {
                             Subtotal
                           </Heading>
                           <Text size="lg" as="p" className="!text-gray-900">
-                            ${subtotal.toFixed(2)}
+                            {cartlist.length > 0 ? `$${subtotal.toFixed(2)}` : '-'}
                           </Text>
                         </div>
                         <div className="flex flex-row justify-between w-full">
@@ -209,7 +278,7 @@ export default function OrderonlinePage() {
                             Tax fee
                           </Heading>
                           <Text size="lg" as="p" className="!text-gray-900">
-                            $3.50
+                            {cartlist.length > 0 ? `$3.50` : '-'}
                           </Text>
                         </div>
                         <div className="flex flex-row justify-between w-full">
@@ -217,9 +286,10 @@ export default function OrderonlinePage() {
                             Total
                           </Heading>
                           <Text size="lg" as="p" className="!text-gray-900">
-                            ${(subtotal + 3.5).toFixed(2)}
+                            {cartlist.length > 0 ? `$${(subtotal + 3.5).toFixed(2)}` : '-'}
                           </Text>
                         </div>
+
                       </div>
                       <Button
                         size="2xl"
@@ -233,44 +303,33 @@ export default function OrderonlinePage() {
                   </div>
                 </div>
               </div>
-              <div className="flex flex-row sm:flex-col justify-start items-center w-[22%] md:w-full ml-[242px] gap-2.5 md:ml-5 sm:gap-5">
-                <Img src="images/img_arrow_left.svg" alt="arrowleft_one" className="h-[15px] w-[15px]" />
-                <div className="flex flex-row justify-between w-[71%] sm:w-full">
-                  <div className="flex flex-col items-center justify-start h-[35px] w-[35px]">
-                    <Button
-                      color="gray_900"
-                      size="sm"
-                      className="tracking-[-0.50px] font-inter font-semibold min-w-[35px] rounded sm:min-w-full"
-                    >
-                      1
-                    </Button>
-                  </div>
-                  <div className="flex flex-row w-[48%] gap-2.5">
-                    <div className="flex flex-col items-center justify-start h-[35px] w-[44%]">
-                      <Button
-                        color="gray_200"
-                        size="sm"
-                        className="tracking-[-0.50px] font-inter font-semibold min-w-[35px] rounded sm:min-w-full"
-                      >
-                        2
-                      </Button>
-                    </div>
-                    <div className="flex flex-col items-center justify-start h-[35px] w-[44%]">
-                      <Button
-                        color="gray_200"
-                        size="sm"
-                        className="tracking-[-0.50px] font-inter font-semibold min-w-[35px] rounded sm:min-w-full"
-                      >
-                        3
-                      </Button>
-                    </div>
-                  </div>
-                  <Button color="gray_200" size="xs" className="w-[35px] rounded">
-                    <Img src="images/img_bx_bx_dots_horizontal_rounded.svg" />
-                  </Button>
+              <div className="flex flex-row justify-between items-center w-full mt-[15px]">
+                <TablePagination
+                       rowsPerPageOptions={[5, 10, 25]}
+                      component="div"
+                      count={Number.isNaN(pagination.finalTotal) ? 0 : Number(pagination.finalTotal)}
+                      rowsPerPage={pagination.rowsPerPage}
+                      page={pagination.currentPage - 1} // Adjusted to 0-based index
+                      onPageChange={handleChangePage} // Event handler for page change
+                      onRowsPerPageChange={handleChangeRowsPerPage} // Event handler for rows per page change
+                      ActionsComponent={() => (
+                        <div style={{ flexShrink: 0, ml: 2.5 }} className="sticky bottom-0 z-10">
+                          <IconButton onClick={handleFirstPageButtonClick} disabled={pagination.currentPage === 1 || pagination.rowsPerPage === -1} aria-label="first page">
+                            <FirstPage />
+                          </IconButton>
+                          <IconButton onClick={handleBackButtonClick} disabled={pagination.currentPage === 1 || pagination.rowsPerPage === -1} aria-label="previous page">
+                            <KeyboardArrowLeft />
+                          </IconButton>
+                          <IconButton onClick={handleNextButtonClick} disabled={pagination.currentPage === pagination.totalPages || pagination.rowsPerPage === -1} aria-label="next page">
+                            <KeyboardArrowRight />
+                          </IconButton>
+                          <IconButton onClick={handleLastPageButtonClick} disabled={pagination.currentPage === pagination.totalPages || pagination.rowsPerPage === -1} aria-label="last page">
+                            <LastPage />
+                          </IconButton>
+                        </div>
+                      )}
+                    />
                 </div>
-                <Img src="images/img_akar_icons_chevron_left.svg" alt="akaricons_one" className="h-[15px] w-[15px]" />
-              </div>
             </div>
           </div>
         </div>

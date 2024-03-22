@@ -54,7 +54,7 @@ export default function AddMenuPage() {
   };
 
   const handleImageUpload = (pics) => {
-    if (pics.type === "image/jpeg" || pics.type === "image/png") {
+    if (pics.type === "image/jpeg" || pics.type === "image/png" || pics.type === "image/jpg" || pics.type === "image/webp") {
       const data = new FormData();
       data.append("file", pics);
       data.append("upload_preset", "ml_default");

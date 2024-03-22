@@ -12,7 +12,6 @@ const MenuContext = createContext();
 export const MenuProvider = ({ children }) => {
     const dispatch = useDispatch();
     async function addMenuItem(formdata, pic) {
-        console.log(pic)
         try {
             const response = await fetch('http://localhost:8000/api/menu/addMenu', {
                 method: 'POST',
@@ -52,7 +51,6 @@ export const MenuProvider = ({ children }) => {
                 body: JSON.stringify({ currentPage, rowsPerPage })
             });
             const result = await response.json();
-            console.log(result)
             if (response.ok) {
                 dispatch(addMenu(result))
             }
@@ -98,7 +96,6 @@ export const MenuProvider = ({ children }) => {
     }
 
     const filterCategory = async (id) => {
-        console.log(id)
         const response = await fetch(`http://localhost:8000/api/menu/filterProducts`,{
             method: 'POST',
             headers: {

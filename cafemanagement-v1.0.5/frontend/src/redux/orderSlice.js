@@ -1,48 +1,80 @@
-// menuSlice.js
+
 
 import { createSlice } from '@reduxjs/toolkit';
 
-export const orderSlice = createSlice({
+const calculateSubtotal = (cartlist) =>
+  cartlist.reduce((total, item) => total + item.price * item.orderedQuantity, 0);
+
+const orderSlice = createSlice({
   name: 'order',
   initialState: {
-    data: [], // Assuming your initial data structure
-    quantities: [], // Array to store quantities for each product
-    orderList: [] // Array to store the list of ordered products
+    cartlist: [],
+    subtotal: 0, 
+    customerid: null,
+    orderlist:null,
   },
   reducers: {
-    setMenuData: (state, action) => {
-      state.data = action.payload;
-      state.quantities = new Array(action.payload.length).fill(0); // Initialize quantities array
+    setOrder: (state, action) => {
+      const { data } = action.payload;
+
+      // Iterate over the new data
+      data.forEach(newItem => {
+        // Check if there's an item with the same ID in the cartlist
+        const existingIndex = state.cartlist.findIndex(item => item.productid === newItem.productid);
+
+        // If the item exists in cartlist, update it
+        if (existingIndex !== -1) {
+          state.cartlist[existingIndex] = { ...state.cartlist[existingIndex], ...newItem };
+        } else {
+          // If the item doesn't exist, add it to cartlist
+          state.cartlist.push(newItem);
+        }
+      });
+
+      // Remove items with quantity <= 0
+      state.cartlist = state.cartlist.filter(item => item.orderedQuantity > 0);
+
+      // Update subtotal
+      state.subtotal = calculateSubtotal(state.cartlist);
     },
-    addOrderList: (state, action) => {
-      const productId = action.payload;
-      const selectedProduct = state.data.find(product => product.productid === productId);
-      const isProductInOrderList = state.orderList.some(product => product.productid === productId);
-      if (!isProductInOrderList) {
-        state.orderList.push(selectedProduct);
-        state.quantities[state.data.findIndex(item => item.productid === productId)]++;
+    
+    
+    
+    deleteItem: (state, action) => {
+      const itemIdToDelete = action.payload;
+      // Filter out the item with the provided ID
+      state.cartlist = state.cartlist.filter(item => item.productid !== itemIdToDelete);
+
+      // Update subtotal after deletion
+      state.subtotal = calculateSubtotal(state.cartlist);
+    },
+    setCustomerId: (state, action) => {
+      console.log(action.payload)
+      state.customerid = action.payload;
+      
+    },
+
+    setOrderList: (state, action) => {
+      console.log(action.payload)
+      state.orderlist = action.payload;
+    },
+    statusUpdate: (state, action) => {
+      console.log(action.payload)
+      const orderIdToUpdate = action.payload;
+      // Find the order with the provided orderIdToUpdate in the orderlist
+      const orderToUpdate = state.orderlist.find(order => order.orderid === orderIdToUpdate);
+
+      // If the order is found, update its status to true
+      if (orderToUpdate) {
+        orderToUpdate.status = true;
+      } else {
+        console.log(`Order with ID ${orderIdToUpdate} not found.`);
       }
     },
-    removeFromOrder: (state, action) => {
-      const productId = action.payload;
-      state.orderList = state.orderList.filter(product => product.productid !== productId);
-      state.quantities[state.data.findIndex(item => item.productid === productId)] = 0; // Reset quantity
-    },
-    increaseOrderQuantity: (state, action) => {
-        const productId = action.payload;
-        state.quantities[state.data.findIndex(item => item.productid === productId)]++;
-      },
-      decreaseOrderQuantity: (state, action) => {
-        const productId = action.payload;
-        if (state.quantities[state.data.findIndex(item => item.productid === productId)] > 0) {
-          state.quantities[state.data.findIndex(item => item.productid === productId)]--;
-        }
-      },
+
   },
 });
 
-export const { setMenuData, addOrderList, removeFromOrder,increaseOrderQuantity,decreaseOrderQuantity } = orderSlice.actions;
-
-// Other code like selectors, thunks, etc. if needed
+export const { setOrder, deleteItem, setCustomerId ,setOrderList ,statusUpdate} = orderSlice.actions;
 
 export default orderSlice.reducer;

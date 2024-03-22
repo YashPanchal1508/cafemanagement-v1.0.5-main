@@ -4,17 +4,17 @@ import { Button, Radio, Text, TextArea, Input, Img, Heading } from "../../compon
 import { useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import { useSelector, useDispatch } from 'react-redux';
+import { deleteItem } from "../../redux/orderSlice";
 export default function CheckoutPage() {
   const location = useLocation();
-  const orderList = location.state?.orderList || [];
+  const { cartlist, subtotal } = useSelector((state) => state.order)
+  // const cartlist = location.state?.cartlist || [];
   const quantities = location.state?.quantities || [];
-  const data = location.state?.data || [];
-  console.log(orderList, quantities)
-
-
+  const dispatch = useDispatch()
   const removeFromOrderList = (productId) => {
-    return orderList.filter(product => product.productid !== productId);
-   
+
+    dispatch(deleteItem(productId))
   };
   return (
     <>
@@ -22,8 +22,8 @@ export default function CheckoutPage() {
         <title>Checkout Page</title>
         <meta name="description" content="Web site created using create-react-app" />
       </Helmet>
-      <div className="flex flex-col   justify-start w-full pt-[51px] gap-[150px] md:pt-5 bg-gray-50">
-        <div className="flex flex-row ml-14 justify-center w-full gap-[80px] md:px-5 max-w-[1112px]">
+      <div className="flex flex-col   justify-start w-full pt-[50px] md:pt-5 bg-gray-50">
+        <div className="flex flex-row ml-14 justify-center w-full gap-11 md:px-5 max-w-[1112px]">
 
           {/* Checkout Part */}
           <div className="flex flex-row md:flex-col justify-between items-start w-[70%] md:w-full md:gap-10">
@@ -37,25 +37,11 @@ export default function CheckoutPage() {
                     Checkout
                   </Heading>
                   <div className="flex flex-col items-center justify-start h-[721px] w-[722px] md:w-full gap-[30px]">
-                    <div className="flex flex-col items-start justify-start w-full gap-2">
-                      {/* Shipping Address Section */}
-                      <Text size="s" as="p" className="!text-gray-900">
-                        Shipping address
-                      </Text>
-                      <div className="flex flex-row md:flex-col justify-start gap-4 md:gap-5">
-                        <Input
-                          shape="round"
-                          name="address"
-                          placeholder="8502 Preston Rd. Inglewood, Maine 98380"
-                          className=" md:w-full !text-gray-900"
-                        />
 
-                      </div>
-                    </div>
                     <div className="flex flex-col items-start justify-start w-full gap-[11px]">
                       {/* Order Data Section */}
-                      <Text size="s" as="p" className="!text-gray-900">
-                        Order data
+                      <Text size="m" as="p" className="!text-gray-900">
+                        Customer details
                       </Text>
                       <div className="flex flex-row justify-start w-full">
                         <div className="flex flex-col items-center justify-start w-full gap-6">
@@ -107,34 +93,27 @@ export default function CheckoutPage() {
                           Payment method
                         </Text>
                       </div>
-                      <div className="flex flex-col w-full gap-6">
-                        <div className="flex flex-row sm:flex-col justify-start w-full gap-4 sm:gap-5">
+                      <div className="flex flex-row w-full justify-around gap-6">
+                        <div className="flex  flex-row sm:flex-col justify-around w-full gap-4 sm:gap-5">
                           <Radio
                             value="cashondelivery"
-                            name="cashon"
-                            label="Cash On Delivery"
-                            className="flex w-[49%] pt-3.5 pb-2.5 pl-2 pr-[35px] gap-2 text-gray-900 text-lg bg-blue_gray-100_01 rounded-lg"
+                            name="paymentmode"
+                            label="Cash"
+                            className="flex pt-3.5 pb-2.5 pl-2 pr-[35px] gap-2 text-gray-900 text-lg bg-blue_gray-100_01 rounded-lg"
                           />
                           <Radio
                             value="bcavirtualaccount"
-                            name="bcavirtual"
-                            label="BCA Virtual Account"
-                            className="flex w-[49%] pl-2 pr-[35px] gap-2 py-3 text-gray-900 text-lg bg-blue_gray-100_01 rounded-lg"
+                            name="paymentmode"
+                            label="UPI"
+                            className="flex pl-2 pr-[35px] gap-2 py-3 text-gray-900 text-lg bg-blue_gray-100_01 rounded-lg"
                           />
-                        </div>
-                        <div className="flex flex-row sm:flex-col justify-start w-full gap-4 sm:gap-5">
                           <Radio
                             value="creditcard1"
-                            name="creditcard"
-                            label="Credit Card"
-                            className="flex w-[49%] pl-2 pr-[35px] gap-2 py-3 text-gray-900 text-lg bg-blue_gray-100_01 rounded-lg"
+                            name="paymentmode"
+                            label="Card"
+                            className="flex  pl-2 gap-2 py-3 text-gray-900 text-lg bg-blue_gray-100_01 rounded-lg"
                           />
-                          <Radio
-                            value="transferbank1"
-                            name="transferbank"
-                            label="Transfer Bank"
-                            className="flex w-[49%] pl-2 pr-[35px] gap-2 py-3 text-gray-900 text-lg bg-blue_gray-100_01 rounded-lg"
-                          />
+
                         </div>
                       </div>
                     </div>
@@ -148,7 +127,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* Order Summary Part */}
-          <div className="flex flex-col items-center justify-start w-[30%] gap-[50px] md:w-[25%] bg-white-A700 p-5 h-80  shadow-xs rounded-[16px]">
+          <div className="flex flex-col items-center justify-start w-[50%] gap-[40px] md:w-[25%] bg-white-A700 p-5 h-auto  shadow-xs rounded-[16px]">
             <Text size="l" as="p" className="!text-gray-900 font-bold">
               Order Summary
             </Text>
@@ -157,16 +136,16 @@ export default function CheckoutPage() {
                 Your Orders
               </Text>
               <div className="flex flex-col gap-4">
-                {orderList.map((product) => (
+                {cartlist.map((product) => (
                   <div key={product.productid} className="flex flex-col w-full p-4 rounded border">
                     <div className="flex justify-between items-center gap-10">
                       <div className="flex flex-row items-center">
                         <Text size="lg" as="p" className="font-semibold">
                           {product.productname}
                         </Text>
-                          <Text size="s" as="p" className="text-gray-600 ml-2">
-                            * {quantities[data.findIndex(item => item.productid === product.productid)]}
-                          </Text>
+                        <Text size="s" as="p" className="text-gray-600 ml-2">
+                          * {product.orderedQuantity}
+                        </Text>
                       </div>
                       <div>
                         <Text size="lg" as="p" className="text-gray-600">${product.price}</Text>
@@ -181,6 +160,33 @@ export default function CheckoutPage() {
                   </div>
                 ))}
               </div>
+            </div>
+            <div className="flex flex-col items-center justify-start w-[83%] md:w-full gap-[26px]">
+              <div className="flex flex-row justify-between w-full">
+                <Heading as="h4" className="mb-px !text-black-900">
+                  Subtotal
+                </Heading>
+                <Text size="lg" as="p" className="!text-gray-900">
+                  {cartlist.length > 0 ? `$${subtotal.toFixed(2)}` : '-'}
+                </Text>
+              </div>
+              <div className="flex flex-row justify-between w-full">
+                <Heading as="h4" className="mb-px !text-black-900">
+                  Tax fee
+                </Heading>
+                <Text size="lg" as="p" className="!text-gray-900">
+                  {cartlist.length > 0 ? `$3.50` : '-'}
+                </Text>
+              </div>
+              <div className="flex flex-row justify-between w-full">
+                <Heading as="h4" className="mb-px !text-black-900">
+                  Total
+                </Heading>
+                <Text size="lg" as="p" className="!text-gray-900">
+                  {cartlist.length > 0 ? `$${(subtotal + 3.5).toFixed(2)}` : '-'}
+                </Text>
+              </div>
+
             </div>
           </div>
         </div>
