@@ -1,13 +1,27 @@
 import React, { useState } from "react";
 import { Text, Img } from "./..";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { SubMenu, MenuItem, Menu, Sidebar } from "react-pro-sidebar";
+import { IoLogOut } from 'react-icons/io5';
 
 export default function Sidebar1({ ...props }) {
   const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
 
   const handleSubMenuToggle = () => {
     setIsSubMenuOpen(!isSubMenuOpen);
+  };
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Remove authToken from local storage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('expiresAt');
+    localStorage.removeItem('UserDetails');
+
+    // Redirect to the login page
+    navigate('/login');
   };
 
   return (
@@ -39,7 +53,7 @@ export default function Sidebar1({ ...props }) {
         onToggleSubMenu={handleSubMenuToggle}
         className="flex flex-col items-center justify-start w-full mt-[65px]"
       >
-        <Link to="/" className="text-blue_gray-400">
+        <Link to="/dashboard" className="text-blue_gray-400">
           <MenuItem icon={<Img src="/images/img_circlesfour.svg" alt="image_one" className="h-[20px] w-[20px]" />}>
             Dashboard
           </MenuItem>
@@ -58,10 +72,10 @@ export default function Sidebar1({ ...props }) {
             <MenuItem>Order List</MenuItem>
           </Link>
           <Link to="/order" className="text-blue_gray-400">
-          <MenuItem>
-            Add Order
-          </MenuItem>
-        </Link>
+            <MenuItem>
+              Add Order
+            </MenuItem>
+          </Link>
         </SubMenu>
         <SubMenu
           label={
@@ -100,25 +114,14 @@ export default function Sidebar1({ ...props }) {
             <MenuItem>Review</MenuItem>
           </Link> */}
         </SubMenu>
+
       
-        <SubMenu
-          label={
-            <div className="flex flex-row justify-start items-center gap-3">
-              <Img src="/images/img_frame_21.svg" alt="image_six" className="h-[20px] w-[20px]" />
-              <Text size="lg" as="p">
-                Table{" "}
-              </Text>
-            </div>
-          }
-        >
-          <Link to="/tablelist" className="text-blue_gray-400">
-            <MenuItem>Table List</MenuItem>
-          </Link>
-          {/* <Link to="/tableid" className="text-blue_gray-400">
-            <MenuItem>Table ID</MenuItem>
-          </Link> */}
-        </SubMenu>
-      
+        <Link to="/login" className="text-blue_gray-400">
+          <MenuItem icon={<Img src="/images/126467.png" alt="image_one" className="h-[20px] w-[20px]" />} onClick={handleLogout}>
+          
+            Logout
+          </MenuItem>
+        </Link>
       </Menu>
       <div className="flex flex-col items-start justify-start w-[76%] mt-[276px] mb-[84px] mx-auto">
         <Img src="/images/img_group_18692.png" alt="image_seven" className="w-full object-cover" />
@@ -141,3 +144,4 @@ export default function Sidebar1({ ...props }) {
     </Sidebar>
   );
 }
+

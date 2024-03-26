@@ -21,7 +21,7 @@ export default function DashboardPage() {
             1
           </CardBody>
           <CardFooter className="pt-0 text-center p-3">
-            <Link to="/" className="inline-block">
+            <Link to="/categories" className="inline-block">
               <Button size="sm" variant="text" className="flex items-center gap-2 text-lg font-roboto border-2 hover:bg-blue-500 bg-blue-600 text-white-A700 p-4 h-14">
                 View Category 
                 <svg
@@ -52,7 +52,7 @@ export default function DashboardPage() {
             1
           </CardBody>
           <CardFooter className="pt-0 text-center p-3">
-            <Link to="/" className="inline-block">
+            <Link to="/menulist" className="inline-block">
               <Button size="sm" variant="text" className="flex items-center gap-2 text-lg border-2 hover:bg-blue-500 text-white-A700 bg-blue-600 p-4 h-14 ">
                 View Product
                 <svg
@@ -83,7 +83,7 @@ export default function DashboardPage() {
             1
           </CardBody>
           <CardFooter className="pt-0 text-center p-3">
-            <Link to="/" className="inline-block">
+            <Link to="/customer" className="inline-block">
               <Button size="sm" variant="text" className="flex items-center gap-2 text-lg border-2 text-white-A700 hover:bg-blue-500 bg-blue-600 p-4 h-14">
                 View Bill
                 <svg

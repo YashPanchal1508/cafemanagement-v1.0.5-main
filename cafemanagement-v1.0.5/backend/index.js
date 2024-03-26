@@ -2,9 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const pool = require('./config/db');
-const categoryRoutes = require('./routes/category.routes')
 const cors = require('cors')
+const categoryRoutes = require('./routes/category.routes')
 const menuRoutes = require('./routes/menu.routes')
+const userRoutes = require('./routes/user.routes')
 const app = express();
 const fileUpload = require('express-fileupload'); // Add this line for file uploads
 
@@ -20,7 +21,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/category', categoryRoutes)
 app.use('/api/menu', menuRoutes)
-
+app.use('/api/user', userRoutes)
 
 
 

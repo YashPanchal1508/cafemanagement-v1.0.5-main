@@ -15,7 +15,6 @@ root.render(
     <Provider store={store}>
         <CategoryProvider>
             <MenuProvider>
-
                 <App />
             </MenuProvider>
         </CategoryProvider>
