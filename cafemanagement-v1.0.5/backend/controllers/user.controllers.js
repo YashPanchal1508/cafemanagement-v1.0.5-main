@@ -56,6 +56,7 @@ const loginUser = asyncHandler(async(req,res) => {
         }
         
             const user = userExist.rows[0];
+            // console.log(user)
 
             const passwordCompare = await bcrypt.compare(password, user.password)
 

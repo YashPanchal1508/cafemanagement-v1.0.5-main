@@ -29,7 +29,7 @@ const getMenu = asyncHandler(async(req,res)=> {
     const rowsPerPage = parseInt(req.query.rowsPerPage) || 5; // Default to 5 rows per page
     const currentPage = parseInt(req.query.currentPage) || 1;
     
-    console.log(typeof(rowsPerPage,currentPage))
+    // console.log(typeof(rowsPerPage,currentPage))
   
     try {
       const result = await pool.query({

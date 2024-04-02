@@ -6,6 +6,8 @@ const cors = require('cors')
 const categoryRoutes = require('./routes/category.routes')
 const menuRoutes = require('./routes/menu.routes')
 const userRoutes = require('./routes/user.routes')
+const customerRoutes = require('./routes/customer.routes')
+const orderRoutes = require('./routes/order.routes')
 const app = express();
 const fileUpload = require('express-fileupload'); // Add this line for file uploads
 
@@ -22,6 +24,8 @@ app.get('/', (req, res) => {
 app.use('/api/category', categoryRoutes)
 app.use('/api/menu', menuRoutes)
 app.use('/api/user', userRoutes)
+app.use('/api/customer', customerRoutes)
+app.use('/api/order', orderRoutes)
 
 
 
