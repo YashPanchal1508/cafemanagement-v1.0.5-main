@@ -48,6 +48,5 @@ const getCustomer = asyncHandler(async (req, res) => {
 module.exports = {
     createCustomer,
     getCustomer
-   
-   
+
 }

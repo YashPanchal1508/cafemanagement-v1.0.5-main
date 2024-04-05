@@ -1,4 +1,4 @@
-import React, { useEffect , useState} from "react";
+import React, { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Card,
@@ -12,17 +12,10 @@ import { toast } from "react-toastify";
 export default function DashboardPage() {
   const navigate = useNavigate();
 
-  const [role, setRole] = useState("");
-
-useEffect(() => {
-  let roleFromStorage = localStorage.getItem("UserRole");
-  if (roleFromStorage) {
-    setRole(roleFromStorage);
-    (roleFromStorage === "manager") ? navigate('/not-found') : "Not Found"
-    
-  }
-  
-}, [navigate]);
+  useEffect(() => {
+    const userRole = localStorage.getItem("UserRole");
+    // console.log(userRole)
+  }, []);
 
   const handleViewCategory = () => {
     const role = localStorage.getItem("UserRole");

@@ -10,13 +10,13 @@ import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { useSelector, useDispatch } from 'react-redux';
 import { useMenuContext } from "../../context/menu.context";
 import { setOrder, deleteItem } from "redux/orderSlice";
-import {setCurrentPage, setRowsPerPage } from '../../redux/menuSlice'
+import { setCurrentPage, setRowsPerPage } from '../../redux/menuSlice'
 import { TablePagination } from '@mui/material';
 import { IconButton } from '@mui/material';
 import { FirstPage, KeyboardArrowLeft, KeyboardArrowRight, LastPage } from '@mui/icons-material';
 
 export default function OrderonlinePage() {
-  const { data,pagination } = useSelector((state) => state.menu);
+  const { data, pagination } = useSelector((state) => state.menu);
   const categorylist = useSelector((state) => state.menu.categorylist);
   const { cartlist } = useSelector((state) => state.order)
   const subtotal = useSelector((state) => state.order.subtotal);
@@ -44,40 +44,50 @@ export default function OrderonlinePage() {
 
   const increaseQuantity = (index) => {
     if (data && data[index] && data[index].quantity !== undefined) {
-      setQuantities((prevQuantities) => {
-        const newQuantities = [...prevQuantities];
-        newQuantities[index] = Math.min(
-          newQuantities[index] + 1,
-          data[index].quantity
-        );
-        return newQuantities;
-      });
-
-      // Find the selected item in the cartlist
-      const selectedItemIndex = cartlist.findIndex(item => item.productid === data[index].productid);
-
-      // If the selected item is already in the cartlist, update its quantity
-      if (selectedItemIndex !== -1) {
-        const updatedCartList = cartlist.map((item, idx) => {
-          if (idx === selectedItemIndex) {
-            return {
-              ...item,
-              orderedQuantity: item.orderedQuantity + 1
-            };
-          }
-          return [item];
+      const maxQuantity = data[index].quantity; // Maximum quantity allowed for this product
+      const currentQuantity = quantities[index]; // Current quantity in the cart
+  
+      // Check if the current quantity is less than the maximum allowed quantity
+      if (currentQuantity < maxQuantity) {
+        setQuantities((prevQuantities) => {
+          const newQuantities = [...prevQuantities];
+          newQuantities[index] = Math.min(
+            newQuantities[index] + 1,
+            maxQuantity // Limit the increment to the maximum quantity
+          );
+          return newQuantities;
         });
-        dispatch(setOrder({ data: updatedCartList, mode: "inc" }));
+  
+        // Find the selected item in the cartlist
+        const selectedItemIndex = cartlist.findIndex(item => item.productid === data[index].productid);
+  
+        // If the selected item is already in the cartlist, update its quantity
+        if (selectedItemIndex !== -1) {
+          const updatedCartList = cartlist.map((item, idx) => {
+            if (idx === selectedItemIndex) {
+              return {
+                ...item,
+                orderedQuantity: item.orderedQuantity + 1
+              };
+            }
+            return [item];
+          });
+          dispatch(setOrder({ data: updatedCartList, mode: "inc" }));
+        } else {
+          // If the selected item is not in the cartlist, add it
+          const selectedItem = {
+            ...data[index],
+            orderedQuantity: 1,
+          };
+          dispatch(setOrder({ data: [...cartlist, selectedItem], mode: "inc" }));
+        }
       } else {
-        // If the selected item is not in the cartlist, add it
-        const selectedItem = {
-          ...data[index],
-          orderedQuantity: 1,
-        };
-        dispatch(setOrder({ data: [...cartlist, selectedItem], mode: "inc" }));
+        // Optionally, you can provide some feedback to the user
+        console.log("Maximum quantity reached for this item.");
       }
     }
   };
+  
 
   const decreaseQuantity = (index) => {
     if (data && data[index] && data[index].quantity !== undefined) {
@@ -207,7 +217,7 @@ export default function OrderonlinePage() {
                     </div>
                     <div className="flex flex-wrap  w-[110%] gap-[30px] md:gap-5">
                       {data.map(({ productname, price, productid, image }, index) => (
-                        <div className="flex flex-col items-center justify-start w-[250px] bg-white-A700 rounded-[45px]" key={productid}>
+                        <div className="flex flex-col items-center justify-start w-[250px] bg-white-A700 rounded-[45px] p-3" key={productid}>
                           <div className="flex justify-center items-center h-[173px] w-[173px]">
                             <Img
                               src={image}
@@ -218,7 +228,7 @@ export default function OrderonlinePage() {
                           <Heading size="s" as="h3" className="mt-[21px] text-center">
                             {productname}
                           </Heading>
-                          <Heading size="xs" as="h4" className="mt-[22px]">
+                          <Heading size="m" as="h4" className="mt-4 mb-4 font-semibold">
                             ${price}
                           </Heading>
                           <div className="flex items-center justify-center w-full gap-2">
@@ -237,99 +247,101 @@ export default function OrderonlinePage() {
                     </div>
                   </div>
                   <div className="flex flex-col items-center justify-start w-[31%] md:w-full">
-                    <div className="flex flex-col items-center justify-center w-full gap-[30px] py-[45px] md:py-5 bg-white-A700 shadow-xs rounded-[20px]">
-                      <div className="flex flex-col items-center justify-start w-full gap-[46px]">
-                        <Heading size="lg" as="h3">
-                          Order list
-                        </Heading>
-                        <div className="h-px w-full bg-blue_gray-100" />
-                      </div>
-                      {cartlist.map((product) => (
-                        <div key={product.productid} className="flex flex-col w-full p-4 rounded border">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <Text size="lg" as="p" className="font-semibold">{product.productname}</Text>
+                    <div style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
+                      <div className="flex flex-col items-center justify-center w-full gap-[30px] py-[45px] md:py-5 bg-white-A700 shadow-xs rounded-[20px]">
+                        <div className="flex flex-col items-center justify-start w-full gap-[46px]">
+                          <Heading size="lg" as="h3">
+                            Order list
+                          </Heading>
+                          <div className="h-px w-full bg-blue_gray-100" />
+                        </div>
+                        {cartlist.map((product) => (
+                          <div key={product.productid} className="flex flex-col w-full p-4 rounded border">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <Text size="lg" as="p" className="font-semibold">{product.productname}</Text>
+                              </div>
+                              <div>
+                                <Text size="lg" as="p" className="text-gray-600">${product.price}</Text>
+                              </div>
                             </div>
-                            <div>
-                              <Text size="lg" as="p" className="text-gray-600">${product.price}</Text>
+                            <div className="flex items-center justify-between w-full gap-4">
+                              <div className="flex items-center gap-2">
+                                Quantity: {product.orderedQuantity}
+                              </div>
+                              <button onClick={() => removeFromOrderList(product.productid)} className="px-4 py-2  text-white rounded-full  transition-colors duration-300">
+                                <FontAwesomeIcon icon={faTrash} />
+                              </button>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between w-full gap-4">
-                            <div className="flex items-center gap-2">
-                              Quantity: {product.orderedQuantity}
-                            </div>
-                            <button onClick={() => removeFromOrderList(product.productid)} className="px-4 py-2  text-white rounded-full  transition-colors duration-300">
-                              <FontAwesomeIcon icon={faTrash} />
-                            </button>
+                        ))}
+                        <div className="flex flex-col items-center justify-start w-[83%] md:w-full gap-[26px]">
+                          <div className="flex flex-row justify-between w-full">
+                            <Heading as="h4" className="mb-px !text-black-900">
+                              Subtotal
+                            </Heading>
+                            <Text size="lg" as="p" className="!text-gray-900">
+                              {cartlist.length > 0 ? `$${subtotal.toFixed(2)}` : '-'}
+                            </Text>
+                          </div>
+                          <div className="flex flex-row justify-between w-full">
+                            <Heading as="h4" className="mb-px !text-black-900">
+                              Tax fee
+                            </Heading>
+                            <Text size="lg" as="p" className="!text-gray-900">
+                              {cartlist.length > 0 ? `$3.50` : '-'}
+                            </Text>
+                          </div>
+                          <div className="flex flex-row justify-between w-full">
+                            <Heading as="h4" className="mb-px !text-black-900">
+                              Total
+                            </Heading>
+                            <Text size="lg" as="p" className="!text-gray-900">
+                              {cartlist.length > 0 ? `$${(subtotal + 3.5).toFixed(2)}` : '-'}
+                            </Text>
                           </div>
                         </div>
-                      ))}
-                      <div className="flex flex-col items-center justify-start w-[83%] md:w-full gap-[26px]">
-                        <div className="flex flex-row justify-between w-full">
-                          <Heading as="h4" className="mb-px !text-black-900">
-                            Subtotal
-                          </Heading>
-                          <Text size="lg" as="p" className="!text-gray-900">
-                            {cartlist.length > 0 ? `$${subtotal.toFixed(2)}` : '-'}
-                          </Text>
-                        </div>
-                        <div className="flex flex-row justify-between w-full">
-                          <Heading as="h4" className="mb-px !text-black-900">
-                            Tax fee
-                          </Heading>
-                          <Text size="lg" as="p" className="!text-gray-900">
-                            {cartlist.length > 0 ? `$3.50` : '-'}
-                          </Text>
-                        </div>
-                        <div className="flex flex-row justify-between w-full">
-                          <Heading as="h4" className="mb-px !text-black-900">
-                            Total
-                          </Heading>
-                          <Text size="lg" as="p" className="!text-gray-900">
-                            {cartlist.length > 0 ? `$${(subtotal + 3.5).toFixed(2)}` : '-'}
-                          </Text>
-                        </div>
-
+                        <Button
+                          size="2xl"
+                          shape="round"
+                          className="mb-1 sm:px-5 font-semibold bg-blue_A200 min-w-[283px] !rounded-[15px] sm:min-w-full"
+                          onClick={handleCheckout}
+                        >
+                          Checkout
+                        </Button>
                       </div>
-                      <Button
-                        size="2xl"
-                        shape="round"
-                        className="mb-1 sm:px-5 font-semibold bg-blue_A200 min-w-[283px] !rounded-[15px] sm:min-w-full"
-                        onClick={handleCheckout}
-                      >
-                        Checkout
-                      </Button>
                     </div>
                   </div>
+
                 </div>
               </div>
               <div className="flex flex-row justify-between items-center w-full mt-[15px]">
                 <TablePagination
-                       rowsPerPageOptions={[5, 10, 25]}
-                      component="div"
-                      count={Number.isNaN(pagination.finalTotal) ? 0 : Number(pagination.finalTotal)}
-                      rowsPerPage={pagination.rowsPerPage}
-                      page={pagination.currentPage - 1} // Adjusted to 0-based index
-                      onPageChange={handleChangePage} // Event handler for page change
-                      onRowsPerPageChange={handleChangeRowsPerPage} // Event handler for rows per page change
-                      ActionsComponent={() => (
-                        <div style={{ flexShrink: 0, ml: 2.5 }} className="sticky bottom-0 z-10">
-                          <IconButton onClick={handleFirstPageButtonClick} disabled={pagination.currentPage === 1 || pagination.rowsPerPage === -1} aria-label="first page">
-                            <FirstPage />
-                          </IconButton>
-                          <IconButton onClick={handleBackButtonClick} disabled={pagination.currentPage === 1 || pagination.rowsPerPage === -1} aria-label="previous page">
-                            <KeyboardArrowLeft />
-                          </IconButton>
-                          <IconButton onClick={handleNextButtonClick} disabled={pagination.currentPage === pagination.totalPages || pagination.rowsPerPage === -1} aria-label="next page">
-                            <KeyboardArrowRight />
-                          </IconButton>
-                          <IconButton onClick={handleLastPageButtonClick} disabled={pagination.currentPage === pagination.totalPages || pagination.rowsPerPage === -1} aria-label="last page">
-                            <LastPage />
-                          </IconButton>
-                        </div>
-                      )}
-                    />
-                </div>
+                  rowsPerPageOptions={[5, 10, 25]}
+                  component="div"
+                  count={Number.isNaN(pagination.finalTotal) ? 0 : Number(pagination.finalTotal)}
+                  rowsPerPage={pagination.rowsPerPage}
+                  page={pagination.currentPage - 1} // Adjusted to 0-based index
+                  onPageChange={handleChangePage} // Event handler for page change
+                  onRowsPerPageChange={handleChangeRowsPerPage} // Event handler for rows per page change
+                  ActionsComponent={() => (
+                    <div style={{ flexShrink: 0, ml: 2.5 }} className="sticky bottom-0 z-10">
+                      <IconButton onClick={handleFirstPageButtonClick} disabled={pagination.currentPage === 1 || pagination.rowsPerPage === -1} aria-label="first page">
+                        <FirstPage />
+                      </IconButton>
+                      <IconButton onClick={handleBackButtonClick} disabled={pagination.currentPage === 1 || pagination.rowsPerPage === -1} aria-label="previous page">
+                        <KeyboardArrowLeft />
+                      </IconButton>
+                      <IconButton onClick={handleNextButtonClick} disabled={pagination.currentPage === pagination.totalPages || pagination.rowsPerPage === -1} aria-label="next page">
+                        <KeyboardArrowRight />
+                      </IconButton>
+                      <IconButton onClick={handleLastPageButtonClick} disabled={pagination.currentPage === pagination.totalPages || pagination.rowsPerPage === -1} aria-label="last page">
+                        <LastPage />
+                      </IconButton>
+                    </div>
+                  )}
+                />
+              </div>
             </div>
           </div>
         </div>

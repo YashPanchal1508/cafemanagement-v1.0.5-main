@@ -9,9 +9,9 @@ const orderSlice = createSlice({
   name: 'order',
   initialState: {
     cartlist: [],
-    subtotal: 0, 
+    subtotal: 0,
     customerid: null,
-    orderlist:null,
+    orderlist: null,
   },
   reducers: {
     setOrder: (state, action) => {
@@ -37,9 +37,9 @@ const orderSlice = createSlice({
       // Update subtotal
       state.subtotal = calculateSubtotal(state.cartlist);
     },
-    
-    
-    
+
+
+
     deleteItem: (state, action) => {
       const itemIdToDelete = action.payload;
       // Filter out the item with the provided ID
@@ -51,30 +51,32 @@ const orderSlice = createSlice({
     setCustomerId: (state, action) => {
       console.log(action.payload)
       state.customerid = action.payload;
-      
+
     },
 
     setOrderList: (state, action) => {
-      console.log(action.payload)
       state.orderlist = action.payload;
     },
+
     statusUpdate: (state, action) => {
-      console.log(action.payload)
-      const orderIdToUpdate = action.payload;
+      const {orderid, status} = action.payload;
+  
+      const orderIdToUpdate = orderid;
       // Find the order with the provided orderIdToUpdate in the orderlist
       const orderToUpdate = state.orderlist.find(order => order.orderid === orderIdToUpdate);
 
       // If the order is found, update its status to true
       if (orderToUpdate) {
-        orderToUpdate.status = true;
+        orderToUpdate.status = status;
       } else {
         console.log(`Order with ID ${orderIdToUpdate} not found.`);
       }
     },
 
+
   },
 });
 
-export const { setOrder, deleteItem, setCustomerId ,setOrderList ,statusUpdate} = orderSlice.actions;
+export const { setOrder, deleteItem, setCustomerId, setOrderList, statusUpdate } = orderSlice.actions;
 
 export default orderSlice.reducer;
